@@ -121,7 +121,7 @@ namespace CopyWindowSQL
         {
             if (selected.Type == "U")
             {
-                return $"SELECT * \nFROM {selected.Name} \nWHERE = ";
+                return $"SELECT *\nFROM {selected.Name}\nWHERE = ";
             }
             else
             {
