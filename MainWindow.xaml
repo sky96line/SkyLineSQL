@@ -6,14 +6,14 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:CopyWindowSQL"
         mc:Ignorable="d"
-        Title="MainWindow" Height="365" Width="350" 
+        Title="MainWindow" Height="379" Width="350" 
         WindowStartupLocation="Manual"
         WindowStyle="None"
         ResizeMode="NoResize"
         
         ShowActivated="False"
         ShowInTaskbar="False"
-        AllowsTransparency="True"
+        AllowsTransparency="False"
         Background="Transparent"
         x:Name="main_Window">
 
@@ -25,8 +25,6 @@
 
     <Window.Resources>
         <Style x:Key="myTextBox" TargetType="TextBox">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0 5 0 0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Foreground" Value="#FFF" />
@@ -34,7 +32,8 @@
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="BorderThickness" Value="0"/>
-
+            <Setter Property="Padding" Value="5 5"/>
+            
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="Transparent" />
@@ -49,7 +48,7 @@
         </Style>
         <Style x:Key="myDataGridCell" TargetType="DataGridCell">
             <Setter Property="BorderBrush" Value="Transparent" />
-
+            
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#FFAE00" />
@@ -58,6 +57,12 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="DisabledColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Foreground" Value="Gray"/>
+        </Style>
+        
         <Style x:Key="myDataGrid" TargetType="DataGrid">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0" />
@@ -76,11 +81,11 @@
             <Setter Property="CanUserResizeColumns" Value="False" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="IsSynchronizedWithCurrentItem" Value="True" />
-            <Setter Property="RowHeaderWidth" Value="0" />
-            <Setter Property="ColumnHeaderHeight" Value="0" />
+            <Setter Property="HeadersVisibility" Value="None" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontFamily" Value="JetBrainsMono" />
             
             <Setter Property="CellStyle" Value="{StaticResource myDataGridCell}"/>
         </Style>
@@ -91,22 +96,38 @@
         </Style>
     </Window.Resources>
 
-    <Border CornerRadius="5" BorderBrush="#FFAA00" BorderThickness="2" Padding="2" Background="#26282A">
+    <Border CornerRadius="5" BorderBrush="#FFAA00" BorderThickness="2" Background="#26282A">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="25"/>
-                <RowDefinition Height="*"/>
                 <RowDefinition Height="20"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="*"/>
+                
             </Grid.RowDefinitions>
 
 
+
+            <StackPanel Grid.Row="0" Background="#FFAA00" Margin="0">
+                
+                <TextBlock Margin="0" 
+                           FontWeight="Bold" Padding="5 0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat=" {0} ({1})">
+                            <Binding Path="DM.CurrentConnection"/>
+                            <Binding Path="DatabaseObjects.Count"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+
+                </TextBlock>
+            </StackPanel>
+            
             <TextBox x:Name="SearchBox_txt" Style="{StaticResource myTextBox}"
                     CaretBrush="White"
                     Text="{Binding TextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Grid.Row="0" Grid.Column="0">
+                    Grid.Row="1" Grid.Column="0">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="TextChanged">
                         <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" />
@@ -118,11 +139,10 @@
                     <KeyBinding Key="Down" Command="{Binding Path=NavigationDownCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}" />
                     <KeyBinding Key="Return" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
                 </TextBox.InputBindings>
-
             </TextBox>
 
             <DataGrid x:Name="dg_source"
-                  Grid.Row="1" Grid.Column="0"
+                  Grid.Row="2" Grid.Column="0"
                   ItemsSource="{Binding DatabaseObjects}"
                   SelectedIndex="{Binding SelectedIndex}"
                       SelectionChanged="dg_source_SelectionChanged"
@@ -131,14 +151,14 @@
                     <DataGridTemplateColumn Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" Padding="0" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn Width="25">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Type}" Padding="0" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Type}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -146,9 +166,6 @@
             </DataGrid>
 
 
-            <StackPanel Grid.Row="3" Background="#FFAA00">
-                <TextBlock Text="{Binding DM.CurrentConnection, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Padding="5 0" VerticalAlignment="Center"></TextBlock>
-            </StackPanel>
 
         </Grid>
     </Border>
