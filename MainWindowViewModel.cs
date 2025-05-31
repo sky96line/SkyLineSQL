@@ -71,9 +71,9 @@ namespace CopyWindowSQL
 
 
         public DataManager DM { get; set; }
-        private SearchToken SearchToken;
+        public SearchToken SearchToken { get; set; }
 
-        public ICommand ChangeDatabaseCommand { get; }
+    public ICommand ChangeDatabaseCommand { get; }
         public ICommand SearchDatabaseCommand { get; }
 
         public ICommand NavigationUpCommand { get; }

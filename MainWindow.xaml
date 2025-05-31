@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:CopyWindowSQL"
+        xmlns:util="clr-namespace:CopyWindowSQL.Utility"
         mc:Ignorable="d"
         Title="MainWindow" Height="379" Width="350" 
         WindowStartupLocation="Manual"
@@ -24,6 +25,8 @@
     </Window.InputBindings>
 
     <Window.Resources>
+        <util:HighlightTextConverter x:Key="HighlightConverter" />
+        
         <Style x:Key="myTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -105,7 +108,6 @@
                 <RowDefinition Height="20"/>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="*"/>
-                
             </Grid.RowDefinitions>
 
 
@@ -151,7 +153,16 @@
                     <DataGridTemplateColumn Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
+                                <ContentControl Margin="5 0" VerticalAlignment="Center">
+                                    <ContentControl.Content >
+                                        <MultiBinding Converter="{StaticResource HighlightConverter}">
+                                            <Binding Path="Name" />
+                                            <Binding Path="DataContext.SearchToken.Text" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                        </MultiBinding>
+                                    </ContentControl.Content>
+                                </ContentControl>
+                                <!--<ContentControl Content="{Binding Name, Converter={StaticResource HighlightConverter}}" Margin="5 0" VerticalAlignment="Center" />-->
+                                <!--<TextBlock Text="{Binding Name}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />-->
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
