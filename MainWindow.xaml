@@ -114,7 +114,6 @@
 
 
             <StackPanel Grid.Row="0" Background="#FFAA00" Margin="0">
-                
                 <TextBlock Margin="0" 
                            FontWeight="Bold" Padding="5 0" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock.Text>
@@ -167,10 +166,10 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Width="25">
+                    <DataGridTemplateColumn>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Type}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Type}" Margin="0" TextAlignment="Left" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
