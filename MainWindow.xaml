@@ -20,6 +20,7 @@
 
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding Path=ChangeDatabaseCommand}" />
+        <KeyBinding Modifiers="Ctrl" Key="R" Command="{Binding Path=ReloadDatabaseCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Q" Command="{Binding Path=ExitCommand}" />
         <KeyBinding Key="Esc" Command="{Binding Path=HideWindowCommand}" CommandParameter="{Binding ElementName=main_Window}" />
     </Window.InputBindings>

@@ -59,22 +59,21 @@ namespace CopyWindowSQL
         public DataManager()
         {
             LoadConnections();
-
-            if(Connections.Count > 0)
-            {
-                CurrentConnection = Connections.ElementAt(0).Key;
-                sqlService = new SqlConnection(Connections[CurrentConnection]);
-            }
-                
         }
 
-        private void LoadConnections()
+        public void LoadConnections()
         {
             var filePath = Path.Combine(AppContext.BaseDirectory, "DataManager.json");
 
             string jsonString = File.ReadAllText(filePath);
 
             Connections = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+
+            if (Connections.Count > 0)
+            {
+                CurrentConnection = Connections.ElementAt(0).Key;
+                sqlService = new SqlConnection(Connections[CurrentConnection]);
+            }
         }
 
         public void ChangeDatabase()

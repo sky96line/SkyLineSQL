@@ -73,8 +73,9 @@ namespace CopyWindowSQL
         public DataManager DM { get; set; }
         public SearchToken SearchToken { get; set; }
 
-    public ICommand ChangeDatabaseCommand { get; }
+        public ICommand ChangeDatabaseCommand { get; }
         public ICommand SearchDatabaseCommand { get; }
+        public ICommand ReloadDatabaseCommand { get; }
 
         public ICommand NavigationUpCommand { get; }
         public ICommand NavigationDownCommand { get; }
@@ -92,8 +93,9 @@ namespace CopyWindowSQL
             SearchToken = new();
 
             ChangeDatabaseCommand = new RelayCommand(ExecuteChangeDatabaseCommand);
-            SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);    
-        
+            SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);
+            ReloadDatabaseCommand = new RelayCommand(ExecuteReloadDatabaseCommand);
+
             NavigationUpCommand = new RelayCommand(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
             NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
@@ -125,7 +127,11 @@ namespace CopyWindowSQL
                 SelectedIndex = 0;
             }
         }
-        
+
+        private void ExecuteReloadDatabaseCommand(object param)
+        {
+            DM.LoadConnections();
+        }
 
 
 
