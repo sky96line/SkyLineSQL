@@ -89,21 +89,29 @@ namespace CopyWindowSQL
 
         public async Task<IEnumerable<DataModel>> SearchObject(SearchToken searchToken)
         {
-            List<string> search_types = new();
-
-            foreach (char type in searchToken.Command)
+            if (searchToken.Command.Equals("d"))
             {
-                if (DB.Types.ContainsKey(type.ToString().ToLower()))
-                {
-                    search_types.AddRange(DB.Types[type.ToString().ToLower()]);
-                }
+                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where object_definition(object_id) like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
             }
-
-            if (search_types.Count > 0)
+            else
             {
-                var filter = string.Join(",", search_types);
+                List<string> search_types = new();
 
-                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                foreach (char type in searchToken.Command)
+                {
+                    if (DB.Types.ContainsKey(type.ToString().ToLower()))
+                    {
+                        search_types.AddRange(DB.Types[type.ToString().ToLower()]);
+                    }
+                }
+
+                if (search_types.Count > 0)
+                {
+                    var filter = string.Join(",", search_types);
+
+                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                }
+
             }
 
             return Enumerable.Empty<DataModel>();
