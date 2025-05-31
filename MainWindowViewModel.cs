@@ -109,6 +109,8 @@ namespace CopyWindowSQL
             DM.ChangeDatabase();
         }
 
+
+
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);

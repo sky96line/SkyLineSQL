@@ -103,7 +103,7 @@ namespace CopyWindowSQL
             {
                 var filter = string.Join(",", search_types);
 
-                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{searchToken.Text}%' ORDER BY modify_date desc;", commandType: CommandType.Text);
+                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
             }
 
             return Enumerable.Empty<DataModel>();
