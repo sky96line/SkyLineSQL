@@ -15,19 +15,6 @@ using System.Threading.Tasks;
 
 namespace CopyWindowSQL
 {
-    public class DB
-    {
-        public static Dictionary<string, List<string>> Types = new()
-        {
-            {"u",  new() {"'U'"}},
-            {"p",  new() {"'P'" }},
-            {"t",  new() {"'TR'"}},
-            {"f",  new() {"'IF'", "'FN'"}},
-            {"v",  new() {"'V'"}},
-            {"a",  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
-        };
-    }
-
     public class DataModel
     {
         public string Name { get; set; }
@@ -45,6 +32,16 @@ namespace CopyWindowSQL
 
     public class DataManager : INotifyPropertyChanged
     {
+        public Dictionary<string, List<string>> Types = new()
+        {
+            {"u",  new() {"'U'"}},
+            {"p",  new() {"'P'" }},
+            {"t",  new() {"'TR'"}},
+            {"f",  new() {"'IF'", "'FN'"}},
+            {"v",  new() {"'V'"}},
+            {"a",  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
+        };
+
         private string currentConnection;
 
         public string CurrentConnection
@@ -99,9 +96,9 @@ namespace CopyWindowSQL
 
                 foreach (char type in searchToken.Command)
                 {
-                    if (DB.Types.ContainsKey(type.ToString().ToLower()))
+                    if (Types.ContainsKey(type.ToString().ToLower()))
                     {
-                        search_types.AddRange(DB.Types[type.ToString().ToLower()]);
+                        search_types.AddRange(Types[type.ToString().ToLower()]);
                     }
                 }
 
