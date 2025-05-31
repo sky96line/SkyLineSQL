@@ -118,7 +118,7 @@ namespace CopyWindowSQL
         {
             if (selected.Type == "U")
             {
-                return $"SELECT *\nFROM {selected.Name}\nWHERE = ";
+                return $"SELECT TOP 100 *\nFROM {selected.Name}\nWHERE = ";
             }
             else
             {
