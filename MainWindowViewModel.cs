@@ -1,5 +1,6 @@
 ﻿using SkyLineSQL.Utility;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -18,7 +19,14 @@ namespace SkyLineSQL
             Text = "";
         }
 
-        public string Command { get; set; }
+        private string command;
+
+        public string Command
+        {
+            get { return command.ToLower(); }
+            set { command = value.ToLower(); }
+        }
+
         public string Text { get; set; }
     }
 
@@ -110,6 +118,7 @@ namespace SkyLineSQL
         }
 
 
+        
 
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
@@ -119,12 +128,53 @@ namespace SkyLineSQL
         {
             DatabaseObjects.Clear();
 
-            foreach (var item in await DM.SearchObject(SearchToken))
+            Dictionary<char, List<string>> SQlCommands = new()
+                {
+                    {'u',  new() {"'U'"}},
+                    {'p',  new() {"'P'" }},
+                    {'t',  new() {"'TR'"}},
+                    {'f',  new() {"'IF'", "'FN'"}},
+                    {'v',  new() {"'V'"}},
+                    {'a',  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
+                };
+
+
+            List<string> filters = new();
+            bool deepSearch = false;
+            foreach (var cmd in SearchToken.Command)
             {
-                DatabaseObjects.Add(item);
+                if (SQlCommands.ContainsKey(cmd))
+                {
+                    filters.AddRange(SQlCommands[cmd]);
+                }
+                else if (cmd == 'd')
+                {
+                    deepSearch = true;
+                }
+            }
+
+            if (deepSearch == true && filters.Count == 0)
+            {
+                filters.AddRange(SQlCommands['a']);
+            }
+
+            if (deepSearch)
+            {
+                foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
+                {
+                    DatabaseObjects.Add(item);
+                }
+            }
+            else
+            {
+                foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
+                {
+                    DatabaseObjects.Add(item);
+                }
             }
 
             if (DatabaseObjects.Count > 0)
+
             {
                 SelectedIndex = 0;
             }

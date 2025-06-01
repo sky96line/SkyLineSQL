@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -30,15 +31,7 @@ namespace SkyLineSQL
 
     public class DataManager : INotifyPropertyChanged
     {
-        public Dictionary<string, List<string>> Types = new()
-        {
-            {"u",  new() {"'U'"}},
-            {"p",  new() {"'P'" }},
-            {"t",  new() {"'TR'"}},
-            {"f",  new() {"'IF'", "'FN'"}},
-            {"v",  new() {"'V'"}},
-            {"a",  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
-        };
+       
 
         private string currentConnection;
 
@@ -82,31 +75,42 @@ namespace SkyLineSQL
             sqlService = new SqlConnection(Connections[CurrentConnection]);
         }
 
-        public async Task<IEnumerable<DataModel>> SearchObject(SearchToken searchToken)
+        public async Task<IEnumerable<DataModel>> SearchObject(List<string> commands, string search)
         {
-            if (searchToken.Command.Equals("d"))
+            if (commands.Count > 0)
             {
-                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where object_definition(object_id) like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
-            }
-            else
-            {
-                List<string> search_types = new();
+                var filter = string.Join(",", commands);
 
-                foreach (char type in searchToken.Command)
+                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+            }
+
+            return Enumerable.Empty<DataModel>();
+        }
+
+        public async Task<IEnumerable<DataModel>> SearchDeepObject(List<string> commands, string search)
+        {
+            if (commands.Count > 0)
+            {
+                var filter = string.Join(",", commands);
+
+                if (commands.Contains("'U'") == false) // No need to search in table column
                 {
-                    if (Types.ContainsKey(type.ToString().ToLower()))
+                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                }
+                else
+                {
+                    if (commands.Count == 1) // Only search in table column
                     {
-                        search_types.AddRange(Types[type.ToString().ToLower()]);
+                        return await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
+                    }
+                    else // Search in both table column and other object as well
+                    {
+                        var res1 = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                        var res2 = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name);", commandType: CommandType.Text);
+
+                        return res1.Union(res2).OrderBy(x=>x.Name.Length);
                     }
                 }
-
-                if (search_types.Count > 0)
-                {
-                    var filter = string.Join(",", search_types);
-
-                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{searchToken.Text}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
-                }
-
             }
 
             return Enumerable.Empty<DataModel>();
