@@ -111,7 +111,7 @@ namespace SkyLineSQL
         {
             if (selected.Type == "U")
             {
-                return $"SELECT TOP 100 *\nFROM {selected.Name}\nWHERE = ";
+                return $"SELECT top 100 *\nFROM {selected.Name}\nWHERE ";
             }
             else
             {
