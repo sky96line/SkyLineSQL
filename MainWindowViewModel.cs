@@ -174,7 +174,6 @@ namespace SkyLineSQL
             }
 
             if (DatabaseObjects.Count > 0)
-
             {
                 SelectedIndex = 0;
             }
