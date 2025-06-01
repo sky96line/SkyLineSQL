@@ -6,7 +6,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace CopyWindowSQL.Utility
+namespace SkyLineSQL.Utility
 {
     internal class HighlightTextConverter : IMultiValueConverter
     {

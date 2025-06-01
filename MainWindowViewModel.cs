@@ -1,4 +1,4 @@
-﻿using CopyWindowSQL.Utility;
+﻿using SkyLineSQL.Utility;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
-namespace CopyWindowSQL
+namespace SkyLineSQL
 {
     public class SearchToken
     {

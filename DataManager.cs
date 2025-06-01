@@ -7,13 +7,11 @@ using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CopyWindowSQL
+namespace SkyLineSQL
 {
     public class DataModel
     {

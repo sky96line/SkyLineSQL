@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace CopyWindowSQL.Utility
+namespace SkyLineSQL.Utility
 {
     public class RelayCommand : ICommand
     {

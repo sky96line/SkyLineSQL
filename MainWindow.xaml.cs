@@ -9,7 +9,7 @@ using System.Windows.Controls;
 
 using System.Windows.Interop;
 
-namespace CopyWindowSQL
+namespace SkyLineSQL
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

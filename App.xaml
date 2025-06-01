@@ -1,7 +1,7 @@
-﻿<Application x:Class="CopyWindowSQL.App"
+﻿<Application x:Class="SkyLineSQL.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:CopyWindowSQL"
+             xmlns:local="clr-namespace:SkyLineSQL"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         
