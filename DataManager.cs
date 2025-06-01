@@ -93,24 +93,15 @@ namespace SkyLineSQL
             {
                 var filter = string.Join(",", commands);
 
-                if (commands.Contains("'U'") == false) // No need to search in table column
-                {
-                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
-                }
-                else
-                {
-                    if (commands.Count == 1) // Only search in table column
-                    {
-                        return await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
-                    }
-                    else // Search in both table column and other object as well
-                    {
-                        var res1 = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
-                        var res2 = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name);", commandType: CommandType.Text);
+                var result = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
 
-                        return res1.Union(res2).OrderBy(x=>x.Name.Length);
-                    }
+                if (commands.Contains("'U'")) // No need to search in table column
+                {
+                    var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
+                    result = result.Union(sub_result);
                 }
+
+                return result.OrderBy(x => x.Name.Length);
             }
 
             return Enumerable.Empty<DataModel>();
