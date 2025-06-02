@@ -122,11 +122,25 @@ namespace SkyLineSQL
 
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
-            return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
+            return ((SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0) || SearchToken.Command == "s");
         }
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
             DatabaseObjects.Clear();
+
+            if (SearchToken.Command == "s")
+            {
+                foreach (var item in await DM.StartProfiler(5))
+                {
+                    DatabaseObjects.Add(item);
+                }
+
+                if (DatabaseObjects.Count > 0)
+                {
+                    SelectedIndex = 0;
+                }
+                return;
+            }
 
             Dictionary<char, List<string>> SQlCommands = new()
                 {
