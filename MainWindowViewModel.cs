@@ -138,7 +138,6 @@ namespace SkyLineSQL
                     {'a',  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
                 };
 
-
             List<string> filters = new();
             bool deepSearch = false;
             foreach (var cmd in SearchToken.Command)
