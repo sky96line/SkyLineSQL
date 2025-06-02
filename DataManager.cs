@@ -2,7 +2,6 @@
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -107,11 +106,29 @@ namespace SkyLineSQL
             return Enumerable.Empty<DataModel>();
         }
 
+        public async Task<IEnumerable<DataModel>> StartProfiler(int second)
+        {
+            List<DataModel> monitor = new();
+
+            int runInSec = 2;
+
+            for (int i = 0; i < second * runInSec; i++)
+            {
+                var result = await sqlService.QueryAsync<DataModel>("SELECT OBJECT_NAME(t.objectid, t.dbid) AS Name, 'P' as Type, t.objectid as ObjectId from sys.dm_exec_requests r CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t where r.database_id = 5", commandType: CommandType.Text);
+
+                monitor.AddRange(result);
+
+                await Task.Delay(1000 / runInSec);
+            }
+
+            return monitor;
+        }
+
         public async Task<string> GetObject(DataModel selected)
         {
             if (selected.Type == "U")
             {
-                return $"SELECT top 100 *\nFROM {selected.Name}\nWHERE ";
+                return $"SELECT top 100 *\nFROM {selected.Name}\nWHERE IsActive = 1\nORDER BY SortOrder";
             }
             else
             {

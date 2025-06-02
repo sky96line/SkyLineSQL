@@ -54,8 +54,13 @@ namespace SkyLineSQL
         {
             var helper = new WindowInteropHelper(this);
             const uint VK_PLUS = 0x6B;
+            const uint VK_BACK_SLASH = 0xDC;
             const uint MOD_CTRL_SHIFT = 6;
             if (!RegisterHotKey(helper.Handle, HOTKEY_ID, MOD_CTRL_SHIFT, VK_PLUS))
+            {
+                // handle error
+            }
+            else if (!RegisterHotKey(helper.Handle, HOTKEY_ID, MOD_CTRL_SHIFT, VK_BACK_SLASH))
             {
                 // handle error
             }
@@ -138,6 +143,7 @@ namespace SkyLineSQL
             this.Show();
             this.Activate();
 
+            SearchBox_txt.Clear();
             SearchBox_txt.Focus();
             SearchBox_txt.ForceCursor = true;
         }

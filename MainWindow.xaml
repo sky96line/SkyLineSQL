@@ -140,6 +140,7 @@
                     <KeyBinding Key="Up" Command="{Binding Path=NavigationUpCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}"/>
                     <KeyBinding Key="Down" Command="{Binding Path=NavigationDownCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}" />
                     <KeyBinding Key="Return" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
+                    <KeyBinding Key="Add" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
                 </TextBox.InputBindings>
             </TextBox>
 
