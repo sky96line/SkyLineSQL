@@ -33,6 +33,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
                 <RowDefinition Height="30"/>
+                <RowDefinition Height="2"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -50,10 +51,9 @@
 
                 </TextBlock>
             </StackPanel>
-            
-            <TextBox x:Name="SearchBox_txt" CaretBrush="White"
-                    Text="{Binding TextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    Grid.Row="1" Grid.Column="0">
+
+            <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0"
+                    Text="{Binding TextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="TextChanged">
                         <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" />
@@ -68,8 +68,9 @@
                 </TextBox.InputBindings>
             </TextBox>
 
-            <DataGrid x:Name="dg_source"
-                  Grid.Row="2" Grid.Column="0"
+            <ProgressBar Grid.Row="2" Grid.Column="0" Value="50" IsIndeterminate="True" Visibility="{Binding WorkInProgress}" Foreground="#FFAA00" Background="Transparent" BorderThickness="0" />
+
+            <DataGrid x:Name="dg_source" Grid.Row="3" Grid.Column="0"
                   ItemsSource="{Binding DatabaseObjects}"
                   SelectedIndex="{Binding SelectedIndex}"
                       SelectionChanged="dg_source_SelectionChanged">

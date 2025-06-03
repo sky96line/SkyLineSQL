@@ -29,7 +29,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="DataGridCell">
+        <Style x:Key="myDataGridCell" TargetType="DataGridCell">
             <Setter Property="BorderBrush" Value="Transparent" />
 
             <Style.Triggers>

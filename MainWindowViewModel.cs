@@ -32,6 +32,15 @@ namespace SkyLineSQL
 
     public class MainWindowViewModel : INotifyPropertyChanged
     {
+        private Visibility workInProgress = Visibility.Hidden;
+
+        public Visibility WorkInProgress
+        {
+            get { return workInProgress; }
+            set { workInProgress = value; OnPropertyChanged(); }
+        }
+
+
         private string textBox = "";
 
         public string TextBox
@@ -126,6 +135,7 @@ namespace SkyLineSQL
         }
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
+            WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
 
             if (SearchToken.Command == "s")
@@ -139,6 +149,8 @@ namespace SkyLineSQL
                 {
                     SelectedIndex = 0;
                 }
+
+                WorkInProgress = Visibility.Hidden;
                 return;
             }
 
@@ -190,6 +202,7 @@ namespace SkyLineSQL
             {
                 SelectedIndex = 0;
             }
+            WorkInProgress = Visibility.Hidden;
         }
 
         private void ExecuteReloadDatabaseCommand(object param)
