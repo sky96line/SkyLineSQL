@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:SkyLineSQL"
-        xmlns:util="clr-namespace:SkyLineSQL.Utility"
+        
         mc:Ignorable="d"
         Title="MainWindow" Height="379" Width="350" 
         WindowStartupLocation="Manual"
@@ -24,81 +24,6 @@
         <KeyBinding Modifiers="Ctrl" Key="Q" Command="{Binding Path=ExitCommand}" />
         <KeyBinding Key="Esc" Command="{Binding Path=HideWindowCommand}" CommandParameter="{Binding ElementName=main_Window}" />
     </Window.InputBindings>
-
-    <Window.Resources>
-        <util:HighlightTextConverter x:Key="HighlightConverter" />
-        
-        <Style x:Key="myTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="#FFF" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="5 5"/>
-            
-            <Style.Triggers>
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="myDataGridCell" TargetType="DataGridCell">
-            <Setter Property="BorderBrush" Value="Transparent" />
-            
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#FFAE00" />
-                    <Setter Property="BorderThickness" Value="0" />
-                    <Setter Property="FontWeight" Value="Bold" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="DisabledColumnHeaderStyle" TargetType="DataGridColumnHeader">
-            <Setter Property="IsEnabled" Value="False"/>
-            <Setter Property="Foreground" Value="Gray"/>
-        </Style>
-        
-        <Style x:Key="myDataGrid" TargetType="DataGrid">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="RowHeight" Value="25" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="RowBackground" Value="Transparent" />
-            <Setter Property="GridLinesVisibility" Value="None" />
-            <Setter Property="AutoGenerateColumns" Value="False" />
-            <Setter Property="EnableRowVirtualization" Value="True" />
-            <Setter Property="EnableColumnVirtualization" Value="False" />
-            <Setter Property="AllowDrop" Value="False" />
-            <Setter Property="CanUserAddRows" Value="False" />
-            <Setter Property="CanUserDeleteRows" Value="False" />
-            <Setter Property="CanUserResizeRows" Value="False" />
-            <Setter Property="CanUserResizeColumns" Value="False" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="IsSynchronizedWithCurrentItem" Value="True" />
-            <Setter Property="HeadersVisibility" Value="None" />
-            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
-            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="FontFamily" Value="JetBrainsMono" />
-            
-            <Setter Property="CellStyle" Value="{StaticResource myDataGridCell}"/>
-        </Style>
-
-        <Style x:Key="myLabel" TargetType="Label">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0" />
-        </Style>
-    </Window.Resources>
 
     <Border CornerRadius="5" BorderBrush="#FFAA00" BorderThickness="2" Background="#26282A">
         <Grid>
@@ -126,8 +51,7 @@
                 </TextBlock>
             </StackPanel>
             
-            <TextBox x:Name="SearchBox_txt" Style="{StaticResource myTextBox}"
-                    CaretBrush="White"
+            <TextBox x:Name="SearchBox_txt" CaretBrush="White"
                     Text="{Binding TextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     Grid.Row="1" Grid.Column="0">
                 <i:Interaction.Triggers>
@@ -148,8 +72,7 @@
                   Grid.Row="2" Grid.Column="0"
                   ItemsSource="{Binding DatabaseObjects}"
                   SelectedIndex="{Binding SelectedIndex}"
-                      SelectionChanged="dg_source_SelectionChanged"
-                  Style="{StaticResource myDataGrid}">
+                      SelectionChanged="dg_source_SelectionChanged">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="*">
                         <DataGridTemplateColumn.CellTemplate>
@@ -162,8 +85,6 @@
                                         </MultiBinding>
                                     </ContentControl.Content>
                                 </ContentControl>
-                                <!--<ContentControl Content="{Binding Name, Converter={StaticResource HighlightConverter}}" Margin="5 0" VerticalAlignment="Center" />-->
-                                <!--<TextBlock Text="{Binding Name}" Margin="5 0" TextAlignment="Left" VerticalAlignment="Center" />-->
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
