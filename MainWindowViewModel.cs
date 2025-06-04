@@ -1,16 +1,27 @@
-﻿using SkyLineSQL.Utility;
+﻿using Microsoft.Data.SqlClient;
+using SkyLineSQL.Utility;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
 namespace SkyLineSQL
 {
+    enum ProfilingStateEnum
+    {
+        psStopped,
+        psProfiling,
+        psPaused
+    }
+    
     public class SearchToken
     {
         public SearchToken()
@@ -113,6 +124,7 @@ namespace SkyLineSQL
             SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);
             ReloadDatabaseCommand = new RelayCommand(ExecuteReloadDatabaseCommand);
 
+
             NavigationUpCommand = new RelayCommand(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
             NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
@@ -126,33 +138,14 @@ namespace SkyLineSQL
             DM.ChangeDatabase();
         }
 
-
-        
-
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
-            return ((SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0) || SearchToken.Command == "s");
+            return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
             WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
-
-            if (SearchToken.Command == "s")
-            {
-                foreach (var item in await DM.StartProfiler(5))
-                {
-                    DatabaseObjects.Add(item);
-                }
-
-                if (DatabaseObjects.Count > 0)
-                {
-                    SelectedIndex = 0;
-                }
-
-                WorkInProgress = Visibility.Hidden;
-                return;
-            }
 
             Dictionary<char, List<string>> SQlCommands = new()
                 {
@@ -205,6 +198,7 @@ namespace SkyLineSQL
             WorkInProgress = Visibility.Hidden;
         }
 
+        
         private void ExecuteReloadDatabaseCommand(object param)
         {
             DM.LoadConnections();
@@ -236,21 +230,30 @@ namespace SkyLineSQL
 
         private bool CanExecuteSelectionCommand(object param)
         {
-            return SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count;
+
+            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
         }
         private async Task ExecuteSelectionCommand(object param)
         {
-            var SelectedItem = DatabaseObjects[SelectedIndex];
-            if (SelectedItem is not null)
-            {
-                var text = await DM.GetObject(SelectedItem);
-                Clipboard.SetText(text);
-            }
-
             MainWindow window = param as MainWindow;
             if (window is not null)
             {
                 window.Hide();
+            }
+
+            if (SearchToken.Command.Equals("prof"))
+            {
+                ProfilerWindow profilerWindow = new(DM);
+                profilerWindow.Show();
+            }
+            else
+            {
+                var SelectedItem = DatabaseObjects[SelectedIndex];
+                if (SelectedItem is not null)
+                {
+                    var text = await DM.GetObject(SelectedItem);
+                    Clipboard.SetText(text);
+                }
             }
         }
 

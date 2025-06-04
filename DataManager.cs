@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SkyLineSQL
@@ -75,6 +74,14 @@ namespace SkyLineSQL
             sqlService = new SqlConnection(Connections[CurrentConnection]);
         }
 
+        public IDbConnection GetProfilerConnection() 
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(sqlService.ConnectionString);
+            var masterConnString = $"Data Source={builder.DataSource};Initial Catalog=master;User Id={builder.UserID};Password={builder.Password};TrustServerCertificate=True;Application Name=SkyLineSQL";
+
+            return new SqlConnection(masterConnString);
+        }
+
         public async Task<IEnumerable<DataModel>> SearchObject(List<string> commands, string search)
         {
             if (commands.Count > 0)
@@ -125,14 +132,13 @@ namespace SkyLineSQL
 
                 var result = await sqlService.QueryAsync<DataModel>($"SELECT OBJECT_NAME(t.objectid, t.dbid) AS Name, 'P' as Type, t.objectid as ObjectId from sys.dm_exec_requests r CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t where r.database_id = db_id() and OBJECT_NAME(t.objectid, t.dbid) is not null", commandType: CommandType.Text);
                 monitor.AddRange(result.Where(x => !monitor.Select(x => x.Name).Contains(x.Name)));
-                
+
 
                 await Task.Delay(1000 / runInSec);
             }
 
             return monitor;
         }
-
 
         public async Task<string> GetObject(DataModel selected)
         {
