@@ -228,9 +228,9 @@ namespace SkyLineSQL
             SelectedIndex = index + 1;
         }
 
+        
         private bool CanExecuteSelectionCommand(object param)
         {
-
             return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
         }
         private async Task ExecuteSelectionCommand(object param)
@@ -243,7 +243,8 @@ namespace SkyLineSQL
 
             if (SearchToken.Command.Equals("prof"))
             {
-                ProfilerWindow profilerWindow = new(DM);
+                ProfilerWindow profilerWindow = new();
+                profilerWindow.SetDataManager(DM);
                 profilerWindow.Show();
             }
             else

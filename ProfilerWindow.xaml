@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SkyLineSQL"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         Title="SQL Profiler" Height="500" Width="800"
         
@@ -14,7 +15,9 @@
         ShowActivated="True"
         ShowInTaskbar="True"
         AllowsTransparency="False"
-        Background="Transparent">
+        Background="Transparent"
+
+        FontFamily="Segoe UI">
     
     <Window.Resources>
         <Style TargetType="TextBox">
@@ -110,15 +113,15 @@
 
             <!-- MouseOver State -->
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF444444" />
-                    <Setter Property="Foreground" Value="#FFFFFFFF" />
-                </Trigger>
 
                 <!-- Pressed State -->
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#FF666666" />
                     <Setter Property="Foreground" Value="#FFFFFFFF" />
+                </Trigger>
+
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="#FF666666" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -146,25 +149,35 @@
                 </Grid.ColumnDefinitions>
 
 
-                <TextBox Grid.Column="3" HorizontalAlignment="Center" Width="200"
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                    <TextBox HorizontalAlignment="Center" Width="200"
                          BorderBrush="#FF999999" BorderThickness="1" ></TextBox>
+                    <Button Padding="5 0">
+                        <iconPacks:BootstrapIcons Kind="Search" />
+                    </Button>
+                </StackPanel>
+                
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="Start" Margin="0 0 5 0" Padding="0" Width="60" HorizontalAlignment="Left"
-                            Command="{Binding Path=StartProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}"></Button>
+                    <Button Padding="0" Margin="1 0" Width="30" Command="{Binding Path=StartProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}">
+                        <iconPacks:BootstrapIcons Kind="Play" />
+                    </Button>
 
-                    <Button Content="Pause" Margin="50 0 5 0" Padding="0" Width="60"
-                            Command="{Binding Path=pauseProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}"></Button>
+                    <Separator Width="100" Visibility="Hidden"></Separator>
+                    <Button Padding="0" Margin="5 0" Width="30" Command="{Binding Path=PauseProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}">
+                        <iconPacks:BootstrapIcons Kind="Pause" />
+                    </Button>
 
-                    <Button Content="Stop" Margin="0 0 5 0" Padding="0" Width="60"
-                            Command="{Binding Path=StopProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}"></Button>
+                    <Button Padding="0" Margin="5 0" Width="30" Command="{Binding Path=StopProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}">
+                        <iconPacks:BootstrapIcons Kind="Stop" />
+                    </Button>
                 </StackPanel>
             </Grid>
 
 
             <DataGrid Grid.Row="2" Margin="0 5"
                       AutoGenerateColumns="False" CanUserAddRows="False"
-                      ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedEvent}">
+                      ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedEvent}" VerticalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="*" Header="Text Data">
                         <DataGridTemplateColumn.CellTemplate>

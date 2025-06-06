@@ -28,7 +28,7 @@ namespace SkyLineSQL
 
     public class ProfilerWindowViewModel : INotifyPropertyChanged
     {
-        private readonly DataManager DM;
+        private DataManager DM;
         public ObservableCollection<ProfileEventModel> Events { get; set; }
 
         private ProfileEventModel selectedEvent;
@@ -44,14 +44,13 @@ namespace SkyLineSQL
         public ICommand PauseProfilerCommand { get; }
         public ICommand StopProfilerCommand { get; }
 
-        public ProfilerWindowViewModel(DataManager DM)
+        public ProfilerWindowViewModel()
         {
             Events = new();
-            this.DM = DM;
 
-            StartProfilerCommand = new RelayCommand(ExecuteStartProfilerCommand);
-            PauseProfilerCommand = new RelayCommand(ExecutePauseProfilerCommand);
-            StopProfilerCommand = new RelayCommand(ExecuteStopProfilerCommand);
+            StartProfilerCommand = new RelayCommand(ExecuteStartProfilerCommand, CanExecuteStartProfilerCommand);
+            PauseProfilerCommand = new RelayCommand(ExecutePauseProfilerCommand, CanExecutePauseProfilerCommand);
+            StopProfilerCommand = new RelayCommand(ExecuteStopProfilerCommand, CanExecuteStopProfilerCommand);
 
 
             //ProfileEventModel eventModel = new()
@@ -75,13 +74,32 @@ namespace SkyLineSQL
             //Events.Add(eventModel);
         }
 
+        public void SetDataManager(DataManager DM)
+        {
+            this.DM = DM;
+        }
+
+        private bool CanExecuteStartProfilerCommand(object param)
+        {
+            return (m_ProfilingState == ProfilingStateEnum.psPaused || m_ProfilingState == ProfilingStateEnum.psStopped);
+        }
         private void ExecuteStartProfilerCommand(object param)
         {
             StartProfiling();
         }
+
+        private bool CanExecutePauseProfilerCommand(object param)
+        {
+            return (m_ProfilingState == ProfilingStateEnum.psProfiling);
+        }
         private void ExecutePauseProfilerCommand(object param)
         {
             PauseProfiling();
+        }
+
+        private bool CanExecuteStopProfilerCommand(object param)
+        {
+            return (m_ProfilingState == ProfilingStateEnum.psProfiling);
         }
         private void ExecuteStopProfilerCommand(object param)
         {
@@ -92,7 +110,7 @@ namespace SkyLineSQL
         RawTraceReader m_Rdr;
         Thread m_Thr;
         bool m_NeedStop = true;
-        private ProfilingStateEnum m_ProfilingState;
+        private ProfilingStateEnum m_ProfilingState = ProfilingStateEnum.psStopped;
         private Exception m_profilerexception;
 
         private readonly ProfilerEvent m_EventStarted = new ProfilerEvent();
