@@ -98,6 +98,7 @@ namespace SkyLineSQL
         }
 
 
+        ProfilerWindowViewModel profilerVM;
         public DataManager DM { get; set; }
         public SearchToken SearchToken { get; set; }
 
@@ -114,8 +115,10 @@ namespace SkyLineSQL
 
         public MainWindowViewModel()
         {
-            DatabaseObjects = new();
+            profilerVM = new();
 
+
+            DatabaseObjects = new();
             DM = new();
 
             SearchToken = new();
@@ -243,8 +246,8 @@ namespace SkyLineSQL
 
             if (SearchToken.Command.Equals("prof"))
             {
-                ProfilerWindow profilerWindow = new();
-                profilerWindow.SetDataManager(DM);
+                profilerVM.SetDataManager(DM);
+                ProfilerWindow profilerWindow = new(profilerVM);
                 profilerWindow.Show();
             }
             else

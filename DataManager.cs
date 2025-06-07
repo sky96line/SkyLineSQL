@@ -30,8 +30,6 @@ namespace SkyLineSQL
 
     public class DataManager : INotifyPropertyChanged
     {
-       
-
         private string currentConnection;
 
         public string CurrentConnection

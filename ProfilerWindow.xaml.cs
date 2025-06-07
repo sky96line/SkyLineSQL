@@ -19,19 +19,11 @@ namespace SkyLineSQL
     /// </summary>
     public partial class ProfilerWindow : Window
     {
-        ProfilerWindowViewModel VM;
-        public ProfilerWindow()
+        public ProfilerWindow(ProfilerWindowViewModel VM)
         {
             InitializeComponent();
 
-            VM = new();
             this.DataContext = VM;
-        }
-
-        public void SetDataManager(DataManager DM)
-        {
-            this.Title = $"{DM.CurrentConnection} - SQL Profiler";
-            VM.SetDataManager(DM);
         }
     }
 }

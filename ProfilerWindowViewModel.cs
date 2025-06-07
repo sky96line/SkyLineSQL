@@ -43,6 +43,9 @@ namespace SkyLineSQL
         public ICommand StartProfilerCommand { get; }
         public ICommand PauseProfilerCommand { get; }
         public ICommand StopProfilerCommand { get; }
+        
+        public ICommand ClearCommand { get; }
+        public ICommand SearchCommand { get; }
 
         public ProfilerWindowViewModel()
         {
@@ -52,6 +55,8 @@ namespace SkyLineSQL
             PauseProfilerCommand = new RelayCommand(ExecutePauseProfilerCommand, CanExecutePauseProfilerCommand);
             StopProfilerCommand = new RelayCommand(ExecuteStopProfilerCommand, CanExecuteStopProfilerCommand);
 
+            ClearCommand = new RelayCommand(ExecuteClearCommand, CanExecuteClearCommand);
+            SearchCommand = new RelayCommand(ExecuteSearchCommand);
 
             //ProfileEventModel eventModel = new()
             //{
@@ -321,6 +326,23 @@ namespace SkyLineSQL
             }
         }
 
+
+        
+        private bool CanExecuteClearCommand(object param)
+        {
+            return (m_ProfilingState == ProfilingStateEnum.psStopped);
+        }
+        private void ExecuteClearCommand(object param)
+        {
+            Events.Clear();
+        }
+
+
+        
+        private void ExecuteSearchCommand(object param)
+        {
+            // TODO
+        }
 
         #region Notify
 
