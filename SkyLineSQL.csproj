@@ -11,9 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Assets\**" />
     <Compile Remove="Fonts\**" />
+    <EmbeddedResource Remove="Assets\**" />
     <EmbeddedResource Remove="Fonts\**" />
+    <None Remove="Assets\**" />
     <None Remove="Fonts\**" />
+    <Page Remove="Assets\**" />
     <Page Remove="Fonts\**" />
   </ItemGroup>
 
@@ -29,10 +33,6 @@
     <None Update="DataManager.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Assets\" />
   </ItemGroup>
 
 </Project>

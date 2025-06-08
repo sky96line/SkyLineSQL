@@ -1,14 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
-using SkyLineSQL.Utility;
+﻿using SkyLineSQL.Utility;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Data;
-using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -109,6 +105,7 @@ namespace SkyLineSQL
         public ICommand NavigationUpCommand { get; }
         public ICommand NavigationDownCommand { get; }
         public ICommand SelectionCommand { get; }
+        public ICommand SelectionNameCommand { get; }
 
         public ICommand HideWindowCommand { get; }
         public ICommand ExitCommand { get; }
@@ -131,6 +128,7 @@ namespace SkyLineSQL
             NavigationUpCommand = new RelayCommand(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
             NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
+            SelectionNameCommand = new RelayCommand(ExecuteSelectionNameCommand, CanExecuteSelectionNameCommand);
 
             HideWindowCommand = new RelayCommand(ExecuteHideWindowCommand);
             ExitCommand = new RelayCommand(ExecuteExitCommand);
@@ -262,6 +260,25 @@ namespace SkyLineSQL
         }
 
 
+
+        private bool CanExecuteSelectionNameCommand(object param)
+        {
+            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
+        }
+        private void ExecuteSelectionNameCommand(object param)
+        {
+            MainWindow window = param as MainWindow;
+            if (window is not null)
+            {
+                window.Hide();
+            }
+
+            var SelectedItem = DatabaseObjects[SelectedIndex];
+            if (SelectedItem is not null)
+            {
+                Clipboard.SetText(SelectedItem.Name);
+            }
+        }
 
 
         private void ExecuteHideWindowCommand(object param)
