@@ -22,30 +22,22 @@
     <Window.Resources>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Foreground" Value="#FFF" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="1"/>
             <Setter Property="Margin" Value="0"/>
 
-            <Style.Triggers>
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="BorderBrush" Value="#FFAE00"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
+        
         <Style x:Key="myDataGridCell" TargetType="DataGridCell">
-            <Setter Property="BorderBrush" Value="White" />
+            
             <Setter Property="BorderThickness" Value="0.2" />
+            <Setter Property="BorderBrush" Value="#FFAE00"/>
+            <Setter Property="BorderThickness" Value="1"/>
             
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
@@ -61,16 +53,15 @@
             <Setter Property="Background" Value="#2D2D30"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="White"/>
             <Setter Property="Padding" Value="4,2"/>
+
+            <Setter Property="BorderBrush" Value="#FFAE00"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
         <Style TargetType="DataGrid">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0" />
-            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="RowHeight" Value="25" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="RowBackground" Value="Transparent" />
@@ -90,6 +81,8 @@
             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontFamily" Value="JetBrainsMono" />
+            <Setter Property="BorderBrush" Value="#FFAE00"/>
+            <Setter Property="BorderThickness" Value="1"/>
 
             <Setter Property="CellStyle" Value="{StaticResource myDataGridCell}"/>
         </Style>
@@ -103,13 +96,12 @@
             <Setter Property="Background" Value="#FF333333" />
             <!-- Dark Background -->
             <Setter Property="Foreground" Value="#eee" />
-            <!-- Light Foreground -->
-            <Setter Property="BorderBrush" Value="#FF999999" />
-            <!-- Dark Border -->
-            <Setter Property="BorderThickness" Value="1" />
             <!-- Border Thickness -->
             <Setter Property="Padding" Value="5,5,5,5" />
             <!-- Button Padding -->
+
+            <Setter Property="BorderBrush" Value="#FFAE00"/>
+            <Setter Property="BorderThickness" Value="1"/>
 
             <!-- MouseOver State -->
             <Style.Triggers>
@@ -153,8 +145,7 @@
                     <Button Padding="0" Margin="5 0" Width="30" Command="{Binding Path=StopProfilerCommand}" CommandParameter="{Binding ElementName=main_Window}">
                         <iconPacks:BootstrapIcons Kind="Eraser" />
                     </Button>
-                    <TextBox HorizontalAlignment="Center" Width="200"
-                         BorderBrush="#FF999999" BorderThickness="1" ></TextBox>
+                    <TextBox HorizontalAlignment="Center" Width="200"></TextBox>
                     <Button Padding="5 0">
                         <iconPacks:BootstrapIcons Kind="Search" />
                     </Button>
@@ -178,7 +169,7 @@
             </Grid>
 
 
-            <DataGrid Grid.Row="2" Margin="0 5"
+            <DataGrid Grid.Row="2" Margin="0 5" BorderBrush="#FFAE00" BorderThickness="1"
                       AutoGenerateColumns="False" CanUserAddRows="False"
                       ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedEvent}" VerticalScrollBarVisibility="Auto">
                 <DataGrid.Columns>

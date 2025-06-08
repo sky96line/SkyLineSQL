@@ -247,7 +247,7 @@ namespace SkyLineSQL
             if (SearchToken.Command.Equals("prof"))
             {
                 profilerVM.SetDataManager(DM);
-                ProfilerWindow profilerWindow = new(profilerVM);
+                ProfilerWindow profilerWindow = new($"{DM.CurrentConnection} - SQL Profiler", profilerVM);
                 profilerWindow.Show();
             }
             else
