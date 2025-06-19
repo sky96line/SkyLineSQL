@@ -82,11 +82,18 @@ namespace SkyLineSQL
 
         public async Task<IEnumerable<DataModel>> SearchObject(List<string> commands, string search)
         {
-            if (commands.Count > 0)
+            try
             {
-                var filter = string.Join(",", commands);
+                if (commands.Count > 0)
+                {
+                    var filter = string.Join(",", commands);
 
-                return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                }
+            }
+            catch (Exception)
+            {
+                // TODO: Need to handle exception
             }
 
             return Enumerable.Empty<DataModel>();
@@ -94,48 +101,30 @@ namespace SkyLineSQL
 
         public async Task<IEnumerable<DataModel>> SearchDeepObject(List<string> commands, string search)
         {
-            if (commands.Count > 0)
+            try
             {
-                var filter = string.Join(",", commands);
-
-                var result = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
-
-                if (commands.Contains("'U'")) // No need to search in table column
+                if (commands.Count > 0)
                 {
-                    var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
-                    result = result.Union(sub_result);
-                }
+                    var filter = string.Join(",", commands);
 
-                return result.OrderBy(x => x.Name.Length);
+                    var result = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+
+                    if (commands.Contains("'U'")) // No need to search in table column
+                    {
+                        var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
+                        result = result.Union(sub_result);
+                    }
+
+                    return result.OrderBy(x => x.Name.Length);
+                }
             }
+            catch (Exception)
+            {
+                // TODO: Need to handle exception
+            }
+            
 
             return Enumerable.Empty<DataModel>();
-        }
-
-        public async Task<IEnumerable<DataModel>> StartProfiler(int second)
-        {
-            List<DataModel> monitor = new();
-
-            int runInSec = 2;
-
-            for (int i = 0; i < second * runInSec; i++)
-            {
-                //var names = monitor.Select(x => "'" + x.Name + "'");
-                //var find = string.Join(",", names);
-
-                //var result = await sqlService.QueryAsync<DataModel>($"SELECT OBJECT_NAME(t.objectid, t.dbid) AS Name, 'P' as Type, t.objectid as ObjectId from sys.dm_exec_requests r CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t where r.database_id = db_id() and OBJECT_NAME(t.objectid, t.dbid) is not null and OBJECT_NAME(t.objectid, t.dbid) not in ({find})", commandType: CommandType.Text);
-
-                //monitor.AddRange(result);
-
-
-                var result = await sqlService.QueryAsync<DataModel>($"SELECT OBJECT_NAME(t.objectid, t.dbid) AS Name, 'P' as Type, t.objectid as ObjectId from sys.dm_exec_requests r CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t where r.database_id = db_id() and OBJECT_NAME(t.objectid, t.dbid) is not null", commandType: CommandType.Text);
-                monitor.AddRange(result.Where(x => !monitor.Select(x => x.Name).Contains(x.Name)));
-
-
-                await Task.Delay(1000 / runInSec);
-            }
-
-            return monitor;
         }
 
         public async Task<string> GetObject(DataModel selected)
