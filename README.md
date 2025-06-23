@@ -16,6 +16,20 @@
 - .NET 6.0 or later
 - SQL Server credentials for connecting to your database
 
+## Configuration
+
+You must create a `DataManager.json` file in the application directory to define your SQL Server connections. Example format:
+
+```json
+{
+  "Local": "data source=SERVER1;initial catalog=Database1;user id=User1;password=Password1;...",
+  "Staging": "data source=SERVER2;initial catalog=Database2;user id=User2;password=Password2;...",
+  "Production": "data source=SERVER3;initial catalog=Database3;user id=User3;password=Password3;..."
+}
+```
+
+You can add as many connections as you need. Each key is a connection name.
+
 ## Usage
 
 1. **Launch the application.**
@@ -54,6 +68,7 @@
 ## Hotkeys
 
 - Press **Ctrl + Shift + (Backslash or Numpad Plus)** to open the search window app from anywhere.
+- Press **Ctrl + P** to switch between different connections defined in your `DataManager.json` file.
 
 ## SQL Profiler
 
