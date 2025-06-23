@@ -70,12 +70,6 @@ You can add as many connections as you need. Each key is a connection name.
 - Press **Ctrl + Shift + (Backslash or Numpad Plus)** to open the search window app from anywhere.
 - Press **Ctrl + P** to switch between different connections defined in your `DataManager.json` file.
 
-## SQL Profiler
-
-- Open the Profiler window to monitor SQL Server events in real time.
-- Start, pause, and stop profiling sessions.
-- View detailed event data including text, login, CPU, reads, writes, duration, and more.
-
 ## Contributions
 
 Feel free to submit issues or feature requests. Contributions are welcome!
