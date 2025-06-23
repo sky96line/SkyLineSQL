@@ -6,9 +6,7 @@
 
 - Instantly search for various SQL Server database objects (tables, stored procedures, triggers, functions, views, etc.).
 - Command-based search format for quick filtering.
-- Built-in SQL Profiler window to monitor and analyze SQL Server events.
 - Hotkey support for quick window activation.
-- Modern WPF UI with responsive controls.
 
 ## Requirements
 
