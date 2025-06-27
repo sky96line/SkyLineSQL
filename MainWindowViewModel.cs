@@ -7,7 +7,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace SkyLineSQL
 {
@@ -37,6 +40,12 @@ namespace SkyLineSQL
         public string Text { get; set; }
     }
 
+    public class PopupText
+    {
+        public string Heading { get; set; }
+        public string Text { get; set; }
+    }
+
     public class MainWindowViewModel : INotifyPropertyChanged
     {
         private Visibility workInProgress = Visibility.Hidden;
@@ -46,6 +55,26 @@ namespace SkyLineSQL
             get { return workInProgress; }
             set { workInProgress = value; OnPropertyChanged(); }
         }
+
+        #region Popup
+
+        private bool isPopupOpen;
+
+        public bool IsPopupOpen
+        {
+            get { return isPopupOpen; }
+            set { isPopupOpen = value; OnPropertyChanged(); }
+        }
+
+        private string popupHeading;
+
+        public string PopupHeading
+        {
+            get { return popupHeading; }
+            set { popupHeading = value; OnPropertyChanged(); }
+        }
+
+        #endregion
 
 
         private string textBox = "";
@@ -106,6 +135,7 @@ namespace SkyLineSQL
         public ICommand NavigationDownCommand { get; }
         public ICommand SelectionCommand { get; }
         public ICommand SelectionNameCommand { get; }
+        public ICommand PopupCommand { get; }
 
         public ICommand HideWindowCommand { get; }
         public ICommand ExitCommand { get; }
@@ -129,6 +159,7 @@ namespace SkyLineSQL
             NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
             SelectionNameCommand = new RelayCommand(ExecuteSelectionNameCommand, CanExecuteSelectionNameCommand);
+            PopupCommand = new RelayCommandAsync(ExecutePopupCommand, CanExecutePopupCommand);
 
             HideWindowCommand = new RelayCommand(ExecuteHideWindowCommand);
             ExitCommand = new RelayCommand(ExecuteExitCommand);
@@ -216,6 +247,7 @@ namespace SkyLineSQL
         {
             var index = (int)param;
             SelectedIndex = index - 1;
+            IsPopupOpen = false;
         }
 
         private bool CanExecuteNavigationDownCommand(object param)
@@ -227,6 +259,7 @@ namespace SkyLineSQL
         {
             var index = (int)param;
             SelectedIndex = index + 1;
+            IsPopupOpen = false;
         }
 
         
@@ -279,6 +312,63 @@ namespace SkyLineSQL
                 Clipboard.SetText(SelectedItem.Name);
             }
         }
+
+
+        private bool CanExecutePopupCommand(object param)
+        {
+            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count);
+        }
+        private async Task ExecutePopupCommand(object param)
+        {
+            var SelectedItem = DatabaseObjects[SelectedIndex];
+            if (SelectedItem is not null)
+            {
+                var parameters = await DM.GetParameterDefination(SelectedItem);
+                PopupHeading = SelectedItem.Name;
+
+                RichTextBox rctBox = param as RichTextBox;
+                if (rctBox is not null)
+                {
+                    rctBox.Document.Blocks.Clear();
+
+                    foreach (var parameter in parameters)
+                    {
+                        Paragraph paragraph = new Paragraph
+                        {
+                            Margin = new Thickness(0),
+                            LineHeight = 18,
+                        };
+
+                        // White: Parameter name
+                        paragraph.Inlines.Add(new Run(parameter.Name + " ")
+                        {
+                            Foreground = Brushes.White,
+                            FontWeight = FontWeights.Bold,
+                        });
+
+                        // Blue: Data type
+                        paragraph.Inlines.Add(new Run(parameter.DataType + " ")
+                        {
+                            Foreground = Brushes.LightBlue
+                        });
+
+                        if (parameter.GetMaxLength() != string.Empty)
+                        {
+                            // Yellow: Range
+                            paragraph.Inlines.Add(new Run(parameter.GetMaxLength())
+                            {
+                                Foreground = Brushes.LightGoldenrodYellow
+                            });
+                        }
+
+                        rctBox.Document.Blocks.Add(paragraph);
+                    }
+                }
+            }
+
+            IsPopupOpen = !IsPopupOpen;
+        }
+
 
 
         private void ExecuteHideWindowCommand(object param)

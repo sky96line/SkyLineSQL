@@ -28,6 +28,39 @@ namespace SkyLineSQL
         public int ObjectId { get; set; }
     }
 
+    public class ParameterModel
+    {
+        public string Name { get; set; }
+        public string DataType { get; set; }
+        public int MaxLength { get; set; }
+
+        public string GetMaxLength()
+        {
+            if (DataType.Equals("nvarchar"))
+            {
+                if (MaxLength > 0) return $"({MaxLength / 2})";
+                else if(MaxLength == -1) return $"(MAX)";
+            }
+            else if (DataType.Equals("datetime") || DataType.Equals("uniqueidentifier") || DataType.Equals("bit"))
+            {
+                return "";
+            }
+
+            return "";
+        }
+
+
+        public override string ToString()
+        {
+            if (DataType.Equals("nvarchar"))
+            {
+                if (MaxLength > 0) return $"{Name} {DataType} ({MaxLength / 2})";
+                else if (MaxLength == -1) return $"{Name} {DataType} (MAX)";
+            }
+            return $"{Name} {DataType}";
+        }
+    }
+
     public class DataManager : INotifyPropertyChanged
     {
         private string currentConnection;
@@ -140,6 +173,23 @@ namespace SkyLineSQL
 
                 return text;
             }
+        }
+
+
+        public async Task<IEnumerable<ParameterModel>> GetParameterDefination(DataModel selected)
+        {
+            var parameterSQL = "";
+            if (selected.Type == "P" || selected.Type == "FN" || selected.Type == "IF")
+            {
+                parameterSQL = $"SELECT p.name AS Name, t.name AS DataType, p.max_length as MaxLength FROM sys.parameters p JOIN sys.types t ON p.user_type_id = t.user_type_id WHERE p.object_id = {selected.ObjectId}";
+            }
+            if (selected.Type == "U" || selected.Type == "V")
+            {
+                parameterSQL = $"SELECT c.name AS Name, t.name AS DataType, c.max_length as MaxLength FROM sys.columns c JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE c.object_id = {selected.ObjectId}";
+            }
+
+            return await sqlService.QueryAsync<ParameterModel>(parameterSQL, commandType: CommandType.Text);
+            //return string.Join('\n', parameters);
         }
 
         public string ButifyText(string text, string type)
