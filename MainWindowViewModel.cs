@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -87,21 +88,13 @@ namespace SkyLineSQL
 
         private void GenerateSearchToken()
         {
-            if (textBox.StartsWith("/"))
+            if (textBox.Contains(" "))
             {
-                if (textBox.Contains(" "))
-                {
-                    var cmd = textBox.Split(" ").First();
-                    var txt = textBox.Split(" ").Last();
+                var cmd = textBox.Split(" ").First();
+                var txt = textBox.Split(" ").Last();
 
-                    SearchToken.Command = cmd.Replace("/", "");
-                    SearchToken.Text = txt;
-                }
-                else
-                {
-                    SearchToken.Command = textBox.Replace("/", "");
-                    SearchToken.Text = "";
-                }
+                SearchToken.Command = cmd.Replace("/", "");
+                SearchToken.Text = txt;
             }
             else
             {
@@ -170,12 +163,45 @@ namespace SkyLineSQL
             DM.ChangeDatabase();
         }
 
+
+        public static bool IsVpnConnected()
+        {
+            if (!NetworkInterface.GetIsNetworkAvailable())
+            {
+                return false; // No network available
+            }
+
+            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface ni in interfaces)
+            {
+                // Check for operational status and interface type
+                if (ni.OperationalStatus == OperationalStatus.Up && 
+                    ni.Name.Equals("SonicWall_NetExtender_SSL"))  // Tunnel can also be used
+                {
+                    return true; // VPN interface found
+                }
+            }
+
+            return false; // No VPN interface found
+        }
+
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
+            if (IsVpnConnected() == false)
+            {
+                WorkInProgress = Visibility.Hidden;
+
+                MessageWindow window = new MessageWindow("Connect VPN", "VPN is not connected!");
+                window.ShowDialog();
+                
+                return;
+            }
+
             WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
 
