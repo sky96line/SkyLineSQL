@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -90,10 +91,11 @@ namespace SkyLineSQL
         {
             if (textBox.Contains(" "))
             {
-                var cmd = textBox.Split(" ").First();
-                var txt = textBox.Split(" ").Last();
+                var parts = textBox.Split(" ");
+                var cmd = parts.First();
+                var txt = string.Join(" ", parts[1..]);
 
-                SearchToken.Command = cmd.Replace("/", "");
+                SearchToken.Command = cmd;
                 SearchToken.Text = txt;
             }
             else
@@ -147,7 +149,6 @@ namespace SkyLineSQL
             SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);
             ReloadDatabaseCommand = new RelayCommand(ExecuteReloadDatabaseCommand);
 
-
             NavigationUpCommand = new RelayCommand(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
             NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
@@ -166,6 +167,8 @@ namespace SkyLineSQL
 
         public static bool IsVpnConnected()
         {
+            return true;
+
             if (!NetworkInterface.GetIsNetworkAvailable())
             {
                 return false; // No network available
@@ -190,17 +193,20 @@ namespace SkyLineSQL
         {
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
+
+        private static readonly SemaphoreLocker _locker = new SemaphoreLocker();
+
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
-            if (IsVpnConnected() == false)
-            {
-                WorkInProgress = Visibility.Hidden;
+            //if (IsVpnConnected() == false)
+            //{
+            //    WorkInProgress = Visibility.Hidden;
 
-                MessageWindow window = new MessageWindow("Connect VPN", "VPN is not connected!");
-                window.ShowDialog();
+            //    MessageWindow window = new MessageWindow("Connect VPN", "VPN is not connected!");
+            //    window.ShowDialog();
                 
-                return;
-            }
+            //    return;
+            //}
 
             WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
@@ -234,21 +240,24 @@ namespace SkyLineSQL
                 filters.AddRange(SQlCommands['a']);
             }
 
-            if (deepSearch)
+            await _locker.LockAsync(async () =>
             {
-                foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
+                if (deepSearch)
                 {
-                    DatabaseObjects.Add(item);
+                    foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
+                    {
+                        DatabaseObjects.Add(item);
+                    }
                 }
-            }
-            else
-            {
-                foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
+                else
                 {
-                    DatabaseObjects.Add(item);
+                    foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
+                    {
+                        DatabaseObjects.Add(item);
+                    }
                 }
-            }
-
+            });
+            
             if (DatabaseObjects.Count > 0)
             {
                 SelectedIndex = 0;

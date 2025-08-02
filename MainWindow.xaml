@@ -110,6 +110,7 @@
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="2"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="20"/>
             </Grid.RowDefinitions>
 
 
@@ -178,6 +179,22 @@
                 </DataGrid.Columns>
             </DataGrid>
 
+            <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" Background="#FFAA00">
+                <StackPanel.Resources>
+                    <Style TargetType="Button">
+                        <Setter Property="Padding" Value="5 0"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="11"/>
+                    </Style>
+                </StackPanel.Resources>
+                <Button>Store (P)rocedure</Button>
+                <Button>(U)ser Table</Button>
+                <Button>(T)rigger</Button>
+                <Button>(F)unction</Button>
+                <Button>(V)iew</Button>
+            </StackPanel>
+            
             <Popup Name="LargePopup"
                PlacementTarget="{Binding ElementName=main_Window}"
                Placement="Right"
