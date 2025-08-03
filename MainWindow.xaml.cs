@@ -140,8 +140,9 @@ namespace SkyLineSQL
             this.Show();
             this.Activate();
 
-            SearchBox_txt.Clear();
+            //SearchBox_txt.Clear();
             SearchBox_txt.Focus();
+            SearchBox_txt.SelectAll();
             SearchBox_txt.ForceCursor = true;
         }
 

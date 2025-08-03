@@ -113,7 +113,7 @@
 
 
 
-            <StackPanel Grid.Row="0" Background="#FFAA00" Margin="0" Orientation="Horizontal">
+            <StackPanel Grid.Row="0" Background="#FFAA00" Margin="0">
                 <TextBlock Margin="0" 
                            FontWeight="Bold" Padding="5 0" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock.Text>
@@ -126,8 +126,7 @@
                 </TextBlock>
             </StackPanel>
 
-            <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0"
-                    Text="{Binding TextBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+            <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0" Text="{Binding TextBox, UpdateSourceTrigger=PropertyChanged}">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="TextChanged">
                         <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" />
