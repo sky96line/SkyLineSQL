@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -88,9 +89,9 @@ namespace SkyLineSQL
 
         private void GenerateSearchToken()
         {
-            if (textBox.Contains(" "))
+            if (this.textBox.Contains(" "))
             {
-                var parts = textBox.Split(" ");
+                var parts = this.textBox.Split(" ");
                 var cmd = parts.First();
                 var txt = string.Join(" ", parts[1..]);
 
@@ -100,7 +101,7 @@ namespace SkyLineSQL
             else
             {
                 SearchToken.Command = "a";
-                SearchToken.Text = textBox;
+                SearchToken.Text = this.textBox;
             }
         }
 
@@ -164,49 +165,15 @@ namespace SkyLineSQL
         }
 
 
-        public static bool IsVpnConnected()
-        {
-            return true;
-
-            if (!NetworkInterface.GetIsNetworkAvailable())
-            {
-                return false; // No network available
-            }
-
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (NetworkInterface ni in interfaces)
-            {
-                // Check for operational status and interface type
-                if (ni.OperationalStatus == OperationalStatus.Up && 
-                    ni.Name.Equals("SonicWall_NetExtender_SSL"))  // Tunnel can also be used
-                {
-                    return true; // VPN interface found
-                }
-            }
-
-            return false; // No VPN interface found
-        }
-
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
 
-        private static readonly SemaphoreLocker _locker = new SemaphoreLocker();
+        //private static readonly SemaphoreLocker _locker = new SemaphoreLocker();
 
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
-            //if (IsVpnConnected() == false)
-            //{
-            //    WorkInProgress = Visibility.Hidden;
-
-            //    MessageWindow window = new MessageWindow("Connect VPN", "VPN is not connected!");
-            //    window.ShowDialog();
-                
-            //    return;
-            //}
-
             WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
 
@@ -239,28 +206,26 @@ namespace SkyLineSQL
                 filters.AddRange(SQlCommands['a']);
             }
 
-            await _locker.LockAsync(async () =>
+            if (deepSearch)
             {
-                if (deepSearch)
+                foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
                 {
-                    foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
-                    {
-                        DatabaseObjects.Add(item);
-                    }
+                    DatabaseObjects.Add(item);
                 }
-                else
+            }
+            else
+            {
+                foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
                 {
-                    foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
-                    {
-                        DatabaseObjects.Add(item);
-                    }
+                    DatabaseObjects.Add(item);
                 }
-            });
-            
+            }
+
             if (DatabaseObjects.Count > 0)
             {
                 SelectedIndex = 0;
             }
+
             WorkInProgress = Visibility.Hidden;
         }
 
