@@ -164,7 +164,26 @@ namespace SkyLineSQL
         {
             if (selected.Type == "U")
             {
-                return $"SELECT top 100 *\nFROM {selected.Name}\nWHERE IsActive = 1\nORDER BY SortOrder";
+                var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
+
+                var result = new List<string>();
+                result.Add($"SELECT top 100 *\nFROM {selected.Name}");
+
+                if (cols.Contains("IsActive"))
+                {
+                    result.Add($"\nWHERE IsActive = 1");
+                }
+                if (cols.Contains("SortOrder"))
+                {
+                    result.Add($"\nORDER BY SortOrder");
+                }
+                else
+                {
+                    result.Add($"\nORDER BY 1");
+                }
+
+                return string.Join("", result);
+                //    return $"SELECT top 100 *\nFROM {selected.Name}\nWHERE IsActive = 1\nORDER BY SortOrder";
             }
             else
             {
