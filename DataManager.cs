@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using SkyLineSQL.Utility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -63,15 +64,15 @@ namespace SkyLineSQL
 
     public class DataManager : INotifyPropertyChanged
     {
-        private string currentConnection;
+        private ConnectionModel currentConnection;
 
-        public string CurrentConnection
+        public ConnectionModel CurrentConnection
         {
             get { return currentConnection; }
             set { currentConnection = value; OnPropertyChanged(); }
         }
 
-        private Dictionary<string, string> Connections = new();
+        private List<ConnectionModel> Connections = new();
         private IDbConnection sqlService ;
 
         public DataManager()
@@ -79,30 +80,36 @@ namespace SkyLineSQL
             LoadConnections();
         }
 
+        
+
         public void LoadConnections()
         {
             var filePath = Path.Combine(AppContext.BaseDirectory, "DataManager.json");
 
             string jsonString = File.ReadAllText(filePath);
 
-            Connections = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+            var root = JsonConvert.DeserializeObject<Root>(jsonString);
+            Connections = root.Data;
 
             if (Connections.Count > 0)
             {
-                CurrentConnection = Connections.ElementAt(0).Key;
-                sqlService = new SqlConnection(Connections[CurrentConnection]);
+                CurrentConnection = Connections.ElementAt(0);
+                sqlService = new SqlConnection(CurrentConnection.ConnectionString);
             }
         }
 
-        public void ChangeDatabase()
+        public ConnectionModel ChangeDatabase()
         {
-            int index = Connections.Keys.ToList().IndexOf(CurrentConnection);
+            var currentConn = Connections.FirstOrDefault(x => x.ConnectionString == CurrentConnection.ConnectionString);
+            int index = Connections.IndexOf(currentConn);
 
             var nextIndex = (index + 1) % Connections.Count;
             
-            var newConnection = Connections.ElementAt(nextIndex);
-            CurrentConnection = newConnection.Key;
-            sqlService = new SqlConnection(Connections[CurrentConnection]);
+            var newConnection = Connections[nextIndex];
+            CurrentConnection = newConnection;
+            sqlService = new SqlConnection(CurrentConnection.ConnectionString);
+            
+            return CurrentConnection;
         }
 
         public IDbConnection GetProfilerConnection() 

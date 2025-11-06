@@ -47,7 +47,7 @@
 
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#FFAE00" />
+                    <Setter Property="Background" Value="#E0E0E0" />
                     <Setter Property="BorderThickness" Value="0" />
                     <Setter Property="FontWeight" Value="Bold" />
                 </Trigger>
@@ -98,7 +98,7 @@
         <KeyBinding Key="Esc" Command="{Binding Path=HideWindowCommand}" CommandParameter="{Binding ElementName=main_Window}" />
     </Window.InputBindings>
 
-    <Border CornerRadius="5" BorderBrush="#FFAA00" BorderThickness="2" Background="#26282A">
+    <Border CornerRadius="5" BorderBrush="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" BorderThickness="2" Background="#26282A">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -113,12 +113,13 @@
 
 
 
-            <StackPanel Grid.Row="0" Background="#FFAA00" Margin="0">
+            <StackPanel Grid.Row="0" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" Margin="0">
                 <TextBlock Margin="0" 
                            FontWeight="Bold" Padding="5 0" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock.Text>
-                        <MultiBinding StringFormat=" {0} ({1})">
-                            <Binding Path="DM.CurrentConnection"/>
+                        <MultiBinding StringFormat=" {0} - {1} ({2})">
+                            <Binding Path="DM.CurrentConnection.ProjectName"/>
+                            <Binding Path="DM.CurrentConnection.Environment"/>
                             <Binding Path="DatabaseObjects.Count"/>
                         </MultiBinding>
                     </TextBlock.Text>
@@ -145,7 +146,7 @@
                 </TextBox.InputBindings>
             </TextBox>
 
-            <ProgressBar Grid.Row="2" Grid.Column="0" Value="50" IsIndeterminate="True" Visibility="{Binding WorkInProgress}" Foreground="#FFAA00" Background="Transparent" BorderThickness="0" />
+            <ProgressBar Grid.Row="2" Grid.Column="0" Value="50" IsIndeterminate="True" Visibility="{Binding WorkInProgress}" Foreground="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" />
 
             <DataGrid x:Name="dg_source" Grid.Row="3" Grid.Column="0"
                   ItemsSource="{Binding DatabaseObjects}"
@@ -160,6 +161,8 @@
                                         <MultiBinding Converter="{StaticResource HighlightConverter}">
                                             <Binding Path="Name" />
                                             <Binding Path="DataContext.SearchToken.Text" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                            <Binding Path="DataContext.ThemeColor" RelativeSource="{RelativeSource AncestorType=Window}" />
+
                                         </MultiBinding>
                                     </ContentControl.Content>
                                 </ContentControl>
@@ -176,7 +179,7 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" Background="#FFAA00">
+            <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}">
                 <StackPanel.Resources>
                     <Style TargetType="Button">
                         <Setter Property="Padding" Value="5 0"/>
@@ -202,7 +205,7 @@
                IsOpen="{Binding IsPopupOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 
                 <Border Background="#26282A"
-                    BorderBrush="#FFAA00"
+                    BorderBrush="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}"
                     BorderThickness="1"
                     CornerRadius="5"
                     Padding="10">

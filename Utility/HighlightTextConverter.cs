@@ -14,6 +14,7 @@ namespace SkyLineSQL.Utility
         {
             string text = values[0]?.ToString() ?? "";
             string search = values[1]?.ToString() ?? "";
+            string color = values[2]?.ToString() ?? "";
 
             var textBlock = new TextBlock();
 
@@ -28,7 +29,7 @@ namespace SkyLineSQL.Utility
                     // Matched text (highlighted)
                     textBlock.Inlines.Add(new Run(text.Substring(index, search.Length))
                     {
-                        Background = Brushes.LightGoldenrodYellow,
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)),
                         Foreground = Brushes.Black,
                         FontWeight = FontWeights.Bold,
                     });

@@ -76,6 +76,15 @@ namespace SkyLineSQL
             set { popupHeading = value; OnPropertyChanged(); }
         }
 
+        private string themeColor;
+
+        public string ThemeColor
+        {
+            get { return themeColor; }
+            set { themeColor = value; OnPropertyChanged(); }
+        }
+
+
         #endregion
 
 
@@ -161,7 +170,8 @@ namespace SkyLineSQL
 
         private void ExecuteChangeDatabaseCommand(object param)
         {
-            DM.ChangeDatabase();
+            var newDB = DM.ChangeDatabase();
+            ThemeColor = newDB.ThemeColor;
         }
 
 
