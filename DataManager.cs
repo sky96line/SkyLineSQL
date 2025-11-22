@@ -134,7 +134,7 @@ namespace SkyLineSQL
             {
                 if (commands.Count > 0)
                 {
-                    var filter = string.Join(",", commands);
+                    var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
                     return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
                 }
@@ -153,13 +153,13 @@ namespace SkyLineSQL
             {
                 if (commands.Count > 0)
                 {
-                    var filter = string.Join(",", commands);
+                    var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
                     var result = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
 
-                    if (commands.Contains("'U'")) // No need to search in table column
+                    if (commands.Contains(Constant.UserTable) || commands.Contains(Constant.View)) // No need to search in table column
                     {
-                        var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
+                        var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U', 'V') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
                         result = result.Union(sub_result);
                     }
 
@@ -177,7 +177,7 @@ namespace SkyLineSQL
 
         public async Task<string> GetObject(DataModel selected, List<string> conditions)
         {
-            if (selected.Type == "U")
+            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
             {
                 //var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
                 var cols = await GetColumns(selected);
@@ -218,9 +218,16 @@ namespace SkyLineSQL
 
         public async Task<IEnumerable<string>> GetColumns(DataModel selected)
         {
-            if (selected.Type == "U")
+            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
             {
-                return await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION");
+                try
+                {
+                    return await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION");
+                }
+                catch (Exception)
+                {
+
+                }
             }
 
             return Enumerable.Empty<string>();
@@ -230,24 +237,23 @@ namespace SkyLineSQL
         public async Task<IEnumerable<ParameterModel>> GetParameterDefination(DataModel selected)
         {
             var parameterSQL = "";
-            if (selected.Type == "P" || selected.Type == "FN" || selected.Type == "IF")
+            if (selected.Type.Equals(Constant.Procedure) || selected.Type.Equals(Constant.FunctionFN) || selected.Type.Equals(Constant.FunctionIF))
             {
                 parameterSQL = $"SELECT p.name AS Name, t.name AS DataType, p.max_length as MaxLength FROM sys.parameters p JOIN sys.types t ON p.user_type_id = t.user_type_id WHERE p.object_id = {selected.ObjectId}";
             }
-            if (selected.Type == "U" || selected.Type == "V")
+            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
             {
                 parameterSQL = $"SELECT c.name AS Name, t.name AS DataType, c.max_length as MaxLength FROM sys.columns c JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE c.object_id = {selected.ObjectId}";
             }
 
             return await sqlService.QueryAsync<ParameterModel>(parameterSQL, commandType: CommandType.Text);
-            //return string.Join('\n', parameters);
         }
 
         public string ButifyText(string text, string type)
         {
             StringBuilder str = new StringBuilder();
 
-            if (type == "P")
+            if (type.Equals(Constant.Procedure))
             {
                 if (text.Contains("CREATE PROCEDURE", StringComparison.OrdinalIgnoreCase))
                 {
@@ -267,7 +273,7 @@ namespace SkyLineSQL
 
                 return str.ToString();
             }
-            else if (type == "V")
+            else if (type.Equals(Constant.View))
             {
                 if (text.Contains("CREATE VIEW", StringComparison.OrdinalIgnoreCase))
                 {
@@ -278,7 +284,7 @@ namespace SkyLineSQL
 
                 return str.ToString();
             }
-            else if (type == "TR")
+            else if (type.Equals(Constant.Trigger))
             {
                 if (text.Contains("CREATE TRIGGER", StringComparison.OrdinalIgnoreCase))
                 {

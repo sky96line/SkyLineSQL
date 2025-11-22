@@ -177,6 +177,8 @@ namespace SkyLineSQL
 
         private async Task GenerateColumns()
         {
+            Conditions.Clear();
+
             int i = 1;
             ColumnsOfObject.Clear();
             var cols = await DM.GetColumns(DatabaseObjects[SelectedIndex]);
@@ -223,25 +225,26 @@ namespace SkyLineSQL
             DatabaseObjects.Clear();
             Conditions.Clear();
 
-            Dictionary<char, List<string>> SQlCommands = new()
-                {
-                    {'u',  new() {"'U'"}},
-                    {'p',  new() {"'P'" }},
-                    {'t',  new() {"'TR'"}},
-                    {'f',  new() {"'IF'", "'FN'"}},
-                    {'v',  new() {"'V'"}},
-                    {'a',  new() {"'U'", "'P'", "'TR'", "'IF'", "'FN'", "'V'"}},
-                };
+            Dictionary<string, List<string>> SQlCommands = new()
+            {
+                    {"u",  new() { Constant.UserTable}},
+                    {"p",  new() { Constant.Procedure }},
+                    {"t",  new() { Constant.Trigger}},
+                    {"f",  new() { Constant.FunctionIF, Constant.FunctionFN}},
+                    {"v",  new() { Constant.View}},
+                    {"a",  new() { Constant.UserTable, Constant.Procedure, Constant.Trigger, Constant.FunctionIF, Constant.FunctionFN, Constant.View}},
+            };
 
             List<string> filters = new();
             bool deepSearch = false;
-            foreach (var cmd in SearchToken.Command)
+            foreach (var cmdStr in SearchToken.Command)
             {
+                var cmd = cmdStr.ToString();
                 if (SQlCommands.ContainsKey(cmd))
                 {
                     filters.AddRange(SQlCommands[cmd]);
                 }
-                else if (cmd == 'd')
+                else if (cmd.Equals(Constant.DeepSearch))
                 {
                     deepSearch = true;
                 }
@@ -249,7 +252,7 @@ namespace SkyLineSQL
 
             if (deepSearch && filters.Count == 0)
             {
-                filters.AddRange(SQlCommands['a']);
+                filters.AddRange(SQlCommands[Constant.AllSearch]);
             }
 
             if (deepSearch)
@@ -296,7 +299,7 @@ namespace SkyLineSQL
             SelectedIndex = index - 1;
             IsPopupOpen = false;
 
-            await GenerateColumns();
+            GenerateColumns();
         }
 
         private bool CanExecuteNavigationDownCommand(object param)
@@ -310,7 +313,7 @@ namespace SkyLineSQL
             SelectedIndex = index + 1;
             IsPopupOpen = false;
 
-            await GenerateColumns();
+            GenerateColumns();
         }
 
 
@@ -339,6 +342,7 @@ namespace SkyLineSQL
                 {
                     var text = await DM.GetObject(SelectedItem, Conditions);
                     Clipboard.SetText(text);
+                    Conditions.Clear();
                 }
             }
         }

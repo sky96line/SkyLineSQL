@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -163,7 +161,7 @@ namespace SkyLineSQL
 
         private void dg_source_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if(vm.SelectedIndex>-1)
+            if (vm.SelectedIndex > -1 && vm.DatabaseObjects.Count > 0)
                 dg_source.ScrollIntoView(vm.DatabaseObjects[vm.SelectedIndex]);
         }
     }

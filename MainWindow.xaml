@@ -7,14 +7,14 @@
         xmlns:util="clr-namespace:SkyLineSQL.Utility"
         xmlns:local="clr-namespace:SkyLineSQL"
         mc:Ignorable="d"
-        Title="MainWindow" Height="379" Width="550" 
+        Title="MainWindow" Height="379" Width="520" 
         WindowStartupLocation="Manual"
         WindowStyle="None"
         ResizeMode="NoResize"
         
         ShowActivated="False"
         ShowInTaskbar="False"
-        AllowsTransparency="False"
+        AllowsTransparency="True"
         Background="Transparent"
         x:Name="main_Window">
 
@@ -26,7 +26,8 @@
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Foreground" Value="#FFF" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontFamily" Value="JetBrains Mono" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="5 5"/>
@@ -43,14 +44,31 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="myDataGridRow" TargetType="DataGridRow">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="2" />
+                    <Setter Property="BorderBrush" Value="#E0E0E0" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="FontFamily" Value="JetBrains Mono" />
+                </Trigger>
+            </Style.Triggers>
+
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Height" Value="22" />
+        </Style>
+
         <Style x:Key="myDataGridCell" TargetType="DataGridCell">
             <Setter Property="BorderBrush" Value="Transparent" />
 
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#E0E0E0" />
-                    <Setter Property="BorderThickness" Value="0" />
-                    <Setter Property="FontWeight" Value="Bold" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="FontFamily" Value="JetBrains Mono" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -64,9 +82,7 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="RowHeight" Value="25" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="RowBackground" Value="Transparent" />
             <Setter Property="GridLinesVisibility" Value="None" />
             <Setter Property="AutoGenerateColumns" Value="False" />
             <Setter Property="EnableRowVirtualization" Value="True" />
@@ -82,14 +98,20 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="FontFamily" Value="JetBrainsMono" />
+            <Setter Property="FontFamily" Value="JetBrains Mono" />
 
             <Setter Property="CellStyle" Value="{StaticResource myDataGridCell}"/>
+            <Setter Property="RowStyle" Value="{StaticResource myDataGridRow}"/>
+
+            
         </Style>
 
         <Style TargetType="Label">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="2 0" />
+            <Setter Property="Margin" Value="2 0" />
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="JetBrains Mono" />
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
     </Window.Resources>
     <Window.InputBindings>
@@ -113,8 +135,6 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="25"/>
             </Grid.RowDefinitions>
-
-
 
             <StackPanel Grid.Row="0" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" Margin="0">
                 <TextBlock Margin="0" 
@@ -177,7 +197,6 @@
                                             <Binding Path="Name" />
                                             <Binding Path="DataContext.SearchToken.Text" RelativeSource="{RelativeSource AncestorType=Window}" />
                                             <Binding Path="DataContext.ThemeColor" RelativeSource="{RelativeSource AncestorType=Window}" />
-
                                         </MultiBinding>
                                     </ContentControl.Content>
                                 </ContentControl>
@@ -213,7 +232,8 @@
                                     <Setter Property="Padding" Value="0"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="FontFamily" Value="JetBrains Mono" />
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
                                     <Setter Property="FontSize" Value="11"/>
                                 </Style>
                             </Button.Style>

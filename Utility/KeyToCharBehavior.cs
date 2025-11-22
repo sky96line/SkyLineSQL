@@ -15,16 +15,26 @@ namespace SkyLineSQL.Utility
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             char? typedChar = null;
+            char? typedDigit = null;
 
             if (e.Key >= Key.A && e.Key <= Key.Z)
                 typedChar = (char)('a' + (e.Key - Key.A));
             else if (e.Key >= Key.D0 && e.Key <= Key.D9)
-                typedChar = (char)('0' + (e.Key - Key.D0));
+                typedDigit = (char)('0' + (e.Key - Key.D0));
             else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
-                typedChar = (char)('0' + (e.Key - Key.NumPad0));
+                typedDigit = (char)('0' + (e.Key - Key.NumPad0));
 
-            if (typedChar.HasValue && Command != null && AssociatedObject.Text.Length >= 3)
+            if (typedDigit.HasValue && Command != null)
+            {
+                e.Handled = true;
+                Command.Execute(typedDigit.Value);
+            }
+            else if (typedChar.HasValue && Command != null && AssociatedObject.Text.Length >= 3)
+            {
                 Command.Execute(typedChar.Value);
+            }
+
+
         }
 
         public ICommand Command
