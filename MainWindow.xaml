@@ -5,8 +5,9 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:util="clr-namespace:SkyLineSQL.Utility"
+        xmlns:local="clr-namespace:SkyLineSQL"
         mc:Ignorable="d"
-        Title="MainWindow" Height="379" Width="350" 
+        Title="MainWindow" Height="379" Width="550" 
         WindowStartupLocation="Manual"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -92,7 +93,9 @@
         </Style>
     </Window.Resources>
     <Window.InputBindings>
-        <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding Path=ChangeDatabaseCommand}" />
+        <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding Path=ChangeDatabaseCommand}" CommandParameter="P" />
+        <KeyBinding Modifiers="Ctrl" Key="O" Command="{Binding Path=ChangeDatabaseCommand}" CommandParameter="O"/>
+
         <KeyBinding Modifiers="Ctrl" Key="R" Command="{Binding Path=ReloadDatabaseCommand}" />
         <KeyBinding Modifiers="Ctrl" Key="Q" Command="{Binding Path=ExitCommand}" />
         <KeyBinding Key="Esc" Command="{Binding Path=HideWindowCommand}" CommandParameter="{Binding ElementName=main_Window}" />
@@ -108,7 +111,7 @@
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="2"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="25"/>
             </Grid.RowDefinitions>
 
 
@@ -128,14 +131,26 @@
             </StackPanel>
 
             <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0" Text="{Binding TextBox, UpdateSourceTrigger=PropertyChanged}">
-                <i:Interaction.Triggers>
-                    <i:EventTrigger EventName="TextChanged">
-                        <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" />
+                <i:Interaction.Behaviors>
+                    <util:KeyToCharBehavior Command="{Binding SearchDatabaseCommand}" />
+                </i:Interaction.Behaviors>
+                
+                <!--<i:Interaction.Triggers>
+                    --><!-- Change the EventName to KeyDown or KeyUp --><!--
+                    <i:EventTrigger EventName="KeyDown">
+                        --><!-- Pass the event arguments to the command --><!--
+                        <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" CommandParameter="{Binding Text, RelativeSource={RelativeSource AncestorType=TextBox}}" />
                     </i:EventTrigger>
-                </i:Interaction.Triggers>
+                </i:Interaction.Triggers>-->
+                
+                <!--<i:Interaction.Triggers>
+                    <i:EventTrigger EventName="TextChanged">
+                        <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" CommandParameter="{Binding Text, ElementName=SearchBox_txt}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>-->
 
                 <TextBox.InputBindings>
-                    <KeyBinding Key="Up" Command="{Binding Path=NavigationUpCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}"/>
+                    <KeyBinding Key="Up" Command="{Binding Path=NavigationUpCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}"/>  
                     <KeyBinding Key="Down" Command="{Binding Path=NavigationDownCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}" />
                     <KeyBinding Key="Return" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
                     <KeyBinding Key="Add" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
@@ -179,7 +194,35 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}">
+            <ListBox Grid.Row="4" Grid.Column="0" 
+                     ItemsSource="{Binding ColumnsOfObject}" 
+                     Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                     ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+               
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Button Content="{Binding}" >
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="FontSize" Value="11"/>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!--<StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}">
                 <StackPanel.Resources>
                     <Style TargetType="Button">
                         <Setter Property="Padding" Value="5 0"/>
@@ -193,7 +236,7 @@
                 <Button>(T)rigger</Button>
                 <Button>(F)unction</Button>
                 <Button>(V)iew</Button>
-            </StackPanel>
+            </StackPanel>-->
             
             <Popup Name="LargePopup"
                PlacementTarget="{Binding ElementName=main_Window}"

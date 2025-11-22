@@ -35,12 +35,16 @@ namespace SkyLineSQL
         public string DataType { get; set; }
         public int MaxLength { get; set; }
 
+        //get min length
+
+
+
         public string GetMaxLength()
         {
             if (DataType.Equals("nvarchar"))
             {
                 if (MaxLength > 0) return $"({MaxLength / 2})";
-                else if(MaxLength == -1) return $"(MAX)";
+                else if (MaxLength == -1) return $"(MAX)";
             }
             else if (DataType.Equals("datetime") || DataType.Equals("uniqueidentifier") || DataType.Equals("bit"))
             {
@@ -73,14 +77,14 @@ namespace SkyLineSQL
         }
 
         private List<ConnectionModel> Connections = new();
-        private IDbConnection sqlService ;
+        private IDbConnection sqlService;
 
         public DataManager()
         {
             LoadConnections();
         }
 
-        
+
 
         public void LoadConnections()
         {
@@ -98,21 +102,25 @@ namespace SkyLineSQL
             }
         }
 
-        public ConnectionModel ChangeDatabase()
+        public void ChangeDatabase(int offset)
         {
-            var currentConn = Connections.FirstOrDefault(x => x.ConnectionString == CurrentConnection.ConnectionString);
-            int index = Connections.IndexOf(currentConn);
+            //var currentConn = Connections.FirstOrDefault(x => x.ConnectionString == CurrentConnection.ConnectionString);
+            int index = Connections.IndexOf(CurrentConnection);
 
-            var nextIndex = (index + 1) % Connections.Count;
-            
+            //var nextIndex = (index + offset) % Connections.Count;
+            if (index < 0)
+                index = 0;
+
+            // Proper cyclic modulo that works for negative numbers
+            int nextIndex = ((index + offset) % Connections.Count + Connections.Count) % Connections.Count;
+
+
             var newConnection = Connections[nextIndex];
             CurrentConnection = newConnection;
             sqlService = new SqlConnection(CurrentConnection.ConnectionString);
-            
-            return CurrentConnection;
         }
 
-        public IDbConnection GetProfilerConnection() 
+        public IDbConnection GetProfilerConnection()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(sqlService.ConnectionString);
             var masterConnString = $"Data Source={builder.DataSource};Initial Catalog=master;User Id={builder.UserID};Password={builder.Password};TrustServerCertificate=True;Application Name=SkyLineSQL";
@@ -162,31 +170,38 @@ namespace SkyLineSQL
             {
                 // TODO: Need to handle exception
             }
-            
+
 
             return Enumerable.Empty<DataModel>();
         }
 
-        public async Task<string> GetObject(DataModel selected)
+        public async Task<string> GetObject(DataModel selected, List<string> conditions)
         {
             if (selected.Type == "U")
             {
-                var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
+                //var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
+                var cols = await GetColumns(selected);
 
                 var result = new List<string>();
-                result.Add($"SELECT top 100 *\nFROM {selected.Name}");
+                result.Add($"SELECT top 100 *\nFROM {selected.Name} WHERE 1=1");
 
                 if (cols.Contains("IsActive"))
                 {
-                    result.Add($"\nWHERE IsActive = 1");
+                    result.Add($"\nAND IsActive = 1");
                 }
+
+                foreach (var condition in conditions)
+                {
+                    result.Add($"\nAND {condition} = ''");
+                }
+
                 if (cols.Contains("SortOrder"))
                 {
                     result.Add($"\nORDER BY SortOrder");
                 }
                 else
                 {
-                    result.Add($"\nORDER BY 1");
+                    result.Add($"\nORDER BY 1 DESC");
                 }
 
                 return string.Join("", result);
@@ -197,8 +212,18 @@ namespace SkyLineSQL
                 var text = await sqlService.QueryFirstAsync<string>($"SELECT object_definition(object_id) FROM sys.objects where object_id = {selected.ObjectId};", commandType: CommandType.Text);
                 text = ButifyText(text, selected.Type);
 
-                return text;
+                return text.Trim();
             }
+        }
+
+        public async Task<IEnumerable<string>> GetColumns(DataModel selected)
+        {
+            if (selected.Type == "U")
+            {
+                return await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION");
+            }
+
+            return Enumerable.Empty<string>();
         }
 
 

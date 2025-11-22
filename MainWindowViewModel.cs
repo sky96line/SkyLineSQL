@@ -4,9 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,7 +20,7 @@ namespace SkyLineSQL
         psProfiling,
         psPaused
     }
-    
+
     public class SearchToken
     {
         public SearchToken()
@@ -84,7 +82,6 @@ namespace SkyLineSQL
             set { themeColor = value; OnPropertyChanged(); }
         }
 
-
         #endregion
 
 
@@ -116,6 +113,11 @@ namespace SkyLineSQL
 
 
         public ObservableCollection<DataModel> DatabaseObjects { get; set; }
+
+        public ObservableCollection<KPV> ColumnsOfObject { get; set; }
+
+        public List<string> Conditions { get; set; }
+
 
 
         private int selectedIndex;
@@ -150,7 +152,12 @@ namespace SkyLineSQL
 
 
             DatabaseObjects = new();
+
+            ColumnsOfObject = new();
+            Conditions = new();
+
             DM = new();
+            ThemeColor = DM.CurrentConnection.ThemeColor;
 
             SearchToken = new();
 
@@ -158,20 +165,37 @@ namespace SkyLineSQL
             SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);
             ReloadDatabaseCommand = new RelayCommand(ExecuteReloadDatabaseCommand);
 
-            NavigationUpCommand = new RelayCommand(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
-            NavigationDownCommand = new RelayCommand(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
+            NavigationUpCommand = new RelayCommandAsync(ExecuteNavigationUpCommand, CanExecuteNavigationUpCommand);
+            NavigationDownCommand = new RelayCommandAsync(ExecuteNavigationDownCommand, CanExecuteNavigationDownCommand);
             SelectionCommand = new RelayCommandAsync(ExecuteSelectionCommand, CanExecuteSelectionCommand);
-            SelectionNameCommand = new RelayCommand(ExecuteSelectionNameCommand, CanExecuteSelectionNameCommand);
+            SelectionNameCommand = new RelayCommandAsync(ExecuteSelectionNameCommand, CanExecuteSelectionNameCommand);
             PopupCommand = new RelayCommandAsync(ExecutePopupCommand, CanExecutePopupCommand);
 
             HideWindowCommand = new RelayCommand(ExecuteHideWindowCommand);
             ExitCommand = new RelayCommand(ExecuteExitCommand);
         }
 
+        private async Task GenerateColumns()
+        {
+            int i = 1;
+            ColumnsOfObject.Clear();
+            var cols = await DM.GetColumns(DatabaseObjects[SelectedIndex]);
+            foreach (var col in cols.Take(10))
+            {
+                ColumnsOfObject.Add(new(i, col));
+                i++;
+            }
+        }
+
         private void ExecuteChangeDatabaseCommand(object param)
         {
-            var newDB = DM.ChangeDatabase();
-            ThemeColor = newDB.ThemeColor;
+            string key = param as string;
+            if (key.Equals("P"))
+                DM.ChangeDatabase(1);
+            else if (key.Equals("O"))
+                DM.ChangeDatabase(-1);
+
+            ThemeColor = DM.CurrentConnection.ThemeColor;
         }
 
 
@@ -180,12 +204,24 @@ namespace SkyLineSQL
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
 
-        //private static readonly SemaphoreLocker _locker = new SemaphoreLocker();
-
         private async Task ExecuteSearchDatabaseCommand(object param)
         {
+            char key = (char)param;
+            if (char.IsDigit(key))
+            {
+                int k = int.Parse(key.ToString());
+                var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
+
+                if (c != null)
+                {
+                    Conditions.Add(c.Value);
+                    return;
+                }
+            }
+
             WorkInProgress = Visibility.Visible;
             DatabaseObjects.Clear();
+            Conditions.Clear();
 
             Dictionary<char, List<string>> SQlCommands = new()
                 {
@@ -211,7 +247,7 @@ namespace SkyLineSQL
                 }
             }
 
-            if (deepSearch == true && filters.Count == 0)
+            if (deepSearch && filters.Count == 0)
             {
                 filters.AddRange(SQlCommands['a']);
             }
@@ -234,12 +270,14 @@ namespace SkyLineSQL
             if (DatabaseObjects.Count > 0)
             {
                 SelectedIndex = 0;
+
+                await GenerateColumns();
             }
 
             WorkInProgress = Visibility.Hidden;
         }
 
-        
+
         private void ExecuteReloadDatabaseCommand(object param)
         {
             DM.LoadConnections();
@@ -252,11 +290,13 @@ namespace SkyLineSQL
             var index = (int)param;
             return index > 0;
         }
-        private void ExecuteNavigationUpCommand(object param)
+        private async Task ExecuteNavigationUpCommand(object param)
         {
             var index = (int)param;
             SelectedIndex = index - 1;
             IsPopupOpen = false;
+
+            await GenerateColumns();
         }
 
         private bool CanExecuteNavigationDownCommand(object param)
@@ -264,14 +304,16 @@ namespace SkyLineSQL
             var index = (int)param;
             return index < DatabaseObjects.Count;
         }
-        private void ExecuteNavigationDownCommand(object param)
+        private async Task ExecuteNavigationDownCommand(object param)
         {
             var index = (int)param;
             SelectedIndex = index + 1;
             IsPopupOpen = false;
+
+            await GenerateColumns();
         }
 
-        
+
         private bool CanExecuteSelectionCommand(object param)
         {
             return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
@@ -295,7 +337,7 @@ namespace SkyLineSQL
                 var SelectedItem = DatabaseObjects[SelectedIndex];
                 if (SelectedItem is not null)
                 {
-                    var text = await DM.GetObject(SelectedItem);
+                    var text = await DM.GetObject(SelectedItem, Conditions);
                     Clipboard.SetText(text);
                 }
             }
@@ -307,7 +349,7 @@ namespace SkyLineSQL
         {
             return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
         }
-        private void ExecuteSelectionNameCommand(object param)
+        private async Task ExecuteSelectionNameCommand(object param)
         {
             MainWindow window = param as MainWindow;
             if (window is not null)
@@ -318,6 +360,9 @@ namespace SkyLineSQL
             var SelectedItem = DatabaseObjects[SelectedIndex];
             if (SelectedItem is not null)
             {
+                //var text = await DM.GetObject(SelectedItem);
+                //SSMSHelper.OpenQueryInSSMS(DM.CurrentConnection.ConnectionString, text);
+
                 Clipboard.SetText(SelectedItem.Name);
             }
         }
@@ -390,7 +435,7 @@ namespace SkyLineSQL
             }
         }
         private void ExecuteExitCommand(object param) => Application.Current.Shutdown();
-        
+
 
         #region Notify
 
@@ -403,7 +448,7 @@ namespace SkyLineSQL
 
             PropertyChanged?.Invoke(this, e);
         }
-     
+
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
