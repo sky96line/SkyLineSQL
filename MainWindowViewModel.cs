@@ -202,6 +202,9 @@ namespace SkyLineSQL
             else if (key.Equals("O"))
                 DM.ChangeDatabase(-1);
 
+            DatabaseObjects.Clear();
+            Conditions.Clear();
+            ColumnsOfObject.Clear();
             ThemeColor = DM.CurrentConnection.ThemeColor;
         }
 
