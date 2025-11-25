@@ -79,7 +79,12 @@ namespace SkyLineSQL
         public string ThemeColor
         {
             get { return themeColor; }
-            set { themeColor = value; OnPropertyChanged(); }
+            set { themeColor = value; OnPropertyChanged(); OnPropertyChanged("ThemeColorDim"); }
+        }
+
+        public string ThemeColorDim
+        {
+            get { return themeColor + "FF"; }
         }
 
         #endregion
@@ -197,6 +202,7 @@ namespace SkyLineSQL
             else if (key.Equals("O"))
                 DM.ChangeDatabase(-1);
 
+            SearchDatabaseCommand.Execute(key);
             ThemeColor = DM.CurrentConnection.ThemeColor;
         }
 

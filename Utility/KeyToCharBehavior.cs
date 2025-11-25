@@ -10,16 +10,27 @@ namespace SkyLineSQL.Utility
         protected override void OnAttached()
         {
             AssociatedObject.KeyDown += OnKeyDown;
+            AssociatedObject.TextChanged += OnTextChanged;
+        }
+
+        private void OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            char? lastChar = null;
+            if (AssociatedObject.Text.Length >= 2)
+            {
+                lastChar = AssociatedObject.Text[AssociatedObject.Text.Length - 1];
+                Command.Execute(lastChar);
+            }
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            char? typedChar = null;
+            //char? typedChar = null;
             char? typedDigit = null;
 
-            if (e.Key >= Key.A && e.Key <= Key.Z)
-                typedChar = (char)('a' + (e.Key - Key.A));
-            else if (e.Key >= Key.D0 && e.Key <= Key.D9)
+            //if (e.Key >= Key.A && e.Key <= Key.Z)
+            //    typedChar = (char)('a' + (e.Key - Key.A));
+            if (e.Key >= Key.D0 && e.Key <= Key.D9)
                 typedDigit = (char)('0' + (e.Key - Key.D0));
             else if (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9)
                 typedDigit = (char)('0' + (e.Key - Key.NumPad0));
@@ -29,12 +40,6 @@ namespace SkyLineSQL.Utility
                 e.Handled = true;
                 Command.Execute(typedDigit.Value);
             }
-            else if (typedChar.HasValue && Command != null && AssociatedObject.Text.Length >= 3)
-            {
-                Command.Execute(typedChar.Value);
-            }
-
-
         }
 
         public ICommand Command
