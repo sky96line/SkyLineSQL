@@ -7,10 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace SkyLineSQL
 {
@@ -124,6 +121,15 @@ namespace SkyLineSQL
         public List<string> Conditions { get; set; }
 
 
+        private string previewText;
+
+        public string PreviewText
+        {
+            get { return previewText; }
+            set { previewText = value; OnPropertyChanged(); }
+        }
+
+
 
         private int selectedIndex;
 
@@ -194,6 +200,13 @@ namespace SkyLineSQL
             }
         }
 
+        private async Task GetPreviewText()
+        {
+            PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex]);
+        }
+
+
+
         private void ExecuteChangeDatabaseCommand(object param)
         {
             string key = param as string;
@@ -214,10 +227,10 @@ namespace SkyLineSQL
             return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
         }
 
-        private async Task ExecuteSearchDatabaseCommand(object param)
+        private async Task ExecuteSearchDatabaseCommand(object key)
         {
-            char key = (char)param;
-            if (char.IsDigit(key))
+            char keyChar = (char)key;
+            if (char.IsDigit(keyChar))
             {
                 int k = int.Parse(key.ToString());
                 var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
@@ -247,7 +260,7 @@ namespace SkyLineSQL
             bool deepSearch = false;
             foreach (var cmdStr in SearchToken.Command)
             {
-                var cmd = cmdStr.ToString();
+                var cmd = cmdStr.ToString().ToLower();
                 if (SQlCommands.ContainsKey(cmd))
                 {
                     filters.AddRange(SQlCommands[cmd]);
@@ -260,7 +273,7 @@ namespace SkyLineSQL
 
             if (deepSearch && filters.Count == 0)
             {
-                filters.AddRange(SQlCommands[Constant.AllSearch]);
+                filters.AddRange(SQlCommands[Constant.AllSearch.ToLower()]);
             }
 
             if (deepSearch)
@@ -282,7 +295,8 @@ namespace SkyLineSQL
             {
                 SelectedIndex = 0;
 
-                await GenerateColumns();
+                GetPreviewText();
+                GenerateColumns();
             }
 
             WorkInProgress = Visibility.Hidden;
@@ -305,8 +319,9 @@ namespace SkyLineSQL
         {
             var index = (int)param;
             SelectedIndex = index - 1;
-            IsPopupOpen = false;
+            //IsPopupOpen = false;
 
+            GetPreviewText();
             GenerateColumns();
         }
 
@@ -319,8 +334,9 @@ namespace SkyLineSQL
         {
             var index = (int)param;
             SelectedIndex = index + 1;
-            IsPopupOpen = false;
+            //IsPopupOpen = false;
 
+            GetPreviewText();
             GenerateColumns();
         }
 
@@ -382,56 +398,10 @@ namespace SkyLineSQL
 
         private bool CanExecutePopupCommand(object param)
         {
-            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count);
+            return true;
         }
         private async Task ExecutePopupCommand(object param)
         {
-            var SelectedItem = DatabaseObjects[SelectedIndex];
-            if (SelectedItem is not null)
-            {
-                var parameters = await DM.GetParameterDefination(SelectedItem);
-                PopupHeading = SelectedItem.Name;
-
-                RichTextBox rctBox = param as RichTextBox;
-                if (rctBox is not null)
-                {
-                    rctBox.Document.Blocks.Clear();
-
-                    foreach (var parameter in parameters)
-                    {
-                        Paragraph paragraph = new Paragraph
-                        {
-                            Margin = new Thickness(0),
-                            LineHeight = 18,
-                        };
-
-                        // White: Parameter name
-                        paragraph.Inlines.Add(new Run(parameter.Name + " ")
-                        {
-                            Foreground = Brushes.White,
-                            FontWeight = FontWeights.Bold,
-                        });
-
-                        // Blue: Data type
-                        paragraph.Inlines.Add(new Run(parameter.DataType + " ")
-                        {
-                            Foreground = Brushes.LightBlue
-                        });
-
-                        if (parameter.GetMaxLength() != string.Empty)
-                        {
-                            // Yellow: Range
-                            paragraph.Inlines.Add(new Run(parameter.GetMaxLength())
-                            {
-                                Foreground = Brushes.LightGoldenrodYellow
-                            });
-                        }
-
-                        rctBox.Document.Blocks.Add(paragraph);
-                    }
-                }
-            }
-
             IsPopupOpen = !IsPopupOpen;
         }
 

@@ -16,7 +16,7 @@ namespace SkyLineSQL.Utility
         private void OnTextChanged(object sender, TextChangedEventArgs e)
         {
             char? lastChar = null;
-            if (AssociatedObject.Text.Length >= 2)
+            if (AssociatedObject.Text.Length >= 3)
             {
                 lastChar = AssociatedObject.Text[AssociatedObject.Text.Length - 1];
                 Command.Execute(lastChar);

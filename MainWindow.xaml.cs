@@ -13,8 +13,6 @@ namespace SkyLineSQL
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Register Hot Key
-
         [DllImport("User32.dll")]
         private static extern bool RegisterHotKey(
             [In] IntPtr hWnd,
@@ -137,16 +135,19 @@ namespace SkyLineSQL
             this.Left = wpfWorkingArea.Left + (wpfWorkingArea.Width - this.Width) / 2;
             this.Top = wpfWorkingArea.Top + (wpfWorkingArea.Height - this.Height) / 2;
 
+            //this.Show();
+            //this.Activate();
+
+            // --- critical repairs ---
             this.Show();
             this.Activate();
+            // -------------------------
 
             //SearchBox_txt.Clear();
             SearchBox_txt.Focus();
             SearchBox_txt.SelectAll();
             SearchBox_txt.ForceCursor = true;
         }
-
-        #endregion
 
         MainWindowViewModel vm;
         public MainWindow()

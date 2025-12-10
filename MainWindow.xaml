@@ -7,7 +7,7 @@
         xmlns:util="clr-namespace:SkyLineSQL.Utility"
         xmlns:local="clr-namespace:SkyLineSQL"
         mc:Ignorable="d"
-        Title="MainWindow" Height="379" Width="520" 
+        Title="MainWindow" Height="600" Width="1200" 
         WindowStartupLocation="Manual"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -20,7 +20,9 @@
 
     <Window.Resources>
         <util:HighlightTextConverter x:Key="HighlightConverter" />
+        <util:BoolToGridLengthConverter x:Key="BoolToGridLengthConverter" />
 
+        
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -111,6 +113,7 @@
             <Setter Property="FontFamily" Value="JetBrains Mono" />
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+        
     </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding Path=ChangeDatabaseCommand}" CommandParameter="P" />
@@ -122,9 +125,19 @@
     </Window.InputBindings>
 
     <Border CornerRadius="5" BorderBrush="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" Background="#26282A">
-        <Grid>
+        <Grid x:Name="grid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition >
+                    <ColumnDefinition.Width>
+                        <MultiBinding Converter="{StaticResource BoolToGridLengthConverter}">
+                            <Binding Path="IsPopupOpen" />
+                            <!-- Your condition -->
+                            <Binding ElementName="main_Window" />
+                            <!-- The Grid -->
+                        </MultiBinding>
+                    </ColumnDefinition.Width>
+                </ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
@@ -134,7 +147,7 @@
                 <RowDefinition Height="25"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" Margin="0">
+            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}" Margin="0">
                 <TextBlock Margin="0" 
                            FontWeight="Bold" Padding="5 0" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock.Text>
@@ -211,7 +224,7 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <ListBox Grid.Row="4" Grid.Column="0" 
+            <ListBox Grid.Row="4" Grid.Column="0"  Grid.ColumnSpan="2"
                      ItemsSource="{Binding ColumnsOfObject}" 
                      Background="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}"
                      ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -255,33 +268,23 @@
                 <Button>(F)unction</Button>
                 <Button>(V)iew</Button>
             </StackPanel>-->
-            
-            <Popup Name="LargePopup"
-               PlacementTarget="{Binding ElementName=main_Window}"
-               Placement="Right"
-               StaysOpen="False"
-               AllowsTransparency="True"
-               PopupAnimation="Scroll"    
-               Height="379" 
-               IsOpen="{Binding IsPopupOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 
-                <Border Background="#26282A"
-                    BorderBrush="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}"
-                    BorderThickness="1"
-                    CornerRadius="5"
-                    Padding="10">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="{Binding PopupHeading, UpdateSourceTrigger=PropertyChanged}" FontSize="20" Foreground="White" Margin="0,0,0,20"/>
-                            <RichTextBox Width="350" x:Name="rctBox" Background="#26282A" IsReadOnly="True"
-                                         HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" 
-                                         BorderBrush="Transparent" BorderThickness="0"></RichTextBox>
-                            <!--<TextBlock Text="{Binding PopupText, UpdateSourceTrigger=PropertyChanged}" Foreground="White"/>-->
-                        </StackPanel>
-                    </ScrollViewer>
-                </Border>
-            </Popup>
+            <Border Grid.Row="1" Grid.Column="1" Grid.RowSpan="3"
+                Background="#26282A"
+                  BorderBrush="{Binding ThemeColor,UpdateSourceTrigger=PropertyChanged}"
+                  BorderThickness="1"
+                  Padding="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{Binding PopupHeading, UpdateSourceTrigger=PropertyChanged}" FontSize="20" Foreground="White" Margin="0,0,0,20"/>
+                        <TextBlock Text="{Binding PreviewText, UpdateSourceTrigger=PropertyChanged}" FontSize="14" Foreground="White" Margin="0,0,0,20" />
+                        <!--<RichTextBox Width="350" x:Name="rctBox" Background="#26282A" IsReadOnly="True"
+                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" 
+                           BorderBrush="Transparent" BorderThickness="0"></RichTextBox>-->
+                        <!--<TextBlock Text="{Binding PopupText, UpdateSourceTrigger=PropertyChanged}" Foreground="White"/>-->
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
 
         </Grid>
     </Border>

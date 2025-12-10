@@ -177,7 +177,7 @@ namespace SkyLineSQL
 
         public async Task<string> GetObject(DataModel selected, List<string> conditions)
         {
-            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
+            if (selected.Type.Equals(Constant.UserTable))
             {
                 //var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
                 var cols = await GetColumns(selected);
@@ -218,7 +218,7 @@ namespace SkyLineSQL
 
         public async Task<IEnumerable<string>> GetColumns(DataModel selected)
         {
-            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
+            if (selected.Type.Equals(Constant.UserTable))
             {
                 try
                 {
@@ -231,6 +231,22 @@ namespace SkyLineSQL
             }
 
             return Enumerable.Empty<string>();
+        }
+
+
+        public async Task<string> GetPreviewText(DataModel selected)
+        {
+            try
+            {
+                var preview = await GetObject(selected, new List<string>());
+                return preview;
+            }
+            catch (Exception)
+            {
+
+            }
+
+            return "";
         }
 
 
