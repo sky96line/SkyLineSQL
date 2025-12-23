@@ -131,6 +131,13 @@ namespace SkyLineSQL
         }
 
 
+        private ObservableCollection<object> tableData;
+
+        public ObservableCollection<object> TableData
+        {
+            get { return tableData; }
+            set { tableData = value; OnPropertyChanged(); }
+        }
 
         private int selectedIndex;
 
@@ -207,6 +214,12 @@ namespace SkyLineSQL
         {
             if (IsPopupOpen)
                 PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex], token);
+        }
+
+        private async Task GetPreviewGrid(CancellationToken token)
+        {
+            if (IsPopupOpen)
+                TableData = new(await DM.GetPreviewGrid(DatabaseObjects[SelectedIndex], token));
         }
 
 
@@ -309,6 +322,7 @@ namespace SkyLineSQL
                     SelectedIndex = 0;
 
                     GetPreviewText(token);
+                    //GetPreviewGrid(token);
                     GenerateColumns(token);
                 }
 
@@ -345,6 +359,7 @@ namespace SkyLineSQL
             //IsPopupOpen = false;
 
             GetPreviewText(token);
+            //GetPreviewGrid(token);
             GenerateColumns(token);
         }
 
@@ -364,6 +379,7 @@ namespace SkyLineSQL
             //IsPopupOpen = false;
 
             GetPreviewText(token);
+            //GetPreviewGrid(token);
             GenerateColumns(token);
         }
 

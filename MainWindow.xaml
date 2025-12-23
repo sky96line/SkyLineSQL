@@ -276,12 +276,12 @@
                   Padding="10">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="{Binding PopupHeading, UpdateSourceTrigger=PropertyChanged}" FontSize="20" Foreground="White" Margin="0,0,0,20"/>
+                        <!--<TextBlock Text="{Binding PopupHeading, UpdateSourceTrigger=PropertyChanged}" FontSize="20" Foreground="White" Margin="0,0,0,20"/>-->
                         <TextBlock Text="{Binding PreviewText, UpdateSourceTrigger=PropertyChanged}" FontSize="14" Foreground="White" Margin="0,0,0,20" />
-                        <!--<RichTextBox Width="350" x:Name="rctBox" Background="#26282A" IsReadOnly="True"
+                        <RichTextBox Width="350" x:Name="rctBox" Background="#26282A" IsReadOnly="True"
                            HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" 
-                           BorderBrush="Transparent" BorderThickness="0"></RichTextBox>-->
-                        <!--<TextBlock Text="{Binding PopupText, UpdateSourceTrigger=PropertyChanged}" Foreground="White"/>-->
+                           BorderBrush="Transparent" BorderThickness="0"></RichTextBox>
+                        <TextBlock Text="{Binding PopupText, UpdateSourceTrigger=PropertyChanged}" Foreground="White"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

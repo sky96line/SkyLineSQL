@@ -232,6 +232,41 @@ namespace SkyLineSQL
             }
         }
 
+        public async Task<IEnumerable<object>> GetObjectGrid(DataModel selected, CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+                return Enumerable.Empty<object>();
+
+            if (selected.Type.Equals(Constant.UserTable))
+            {
+                //var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
+                var cols = await GetColumns(selected, token);
+
+                var result = new List<string>();
+                result.Add($"SELECT top 10 *\nFROM {selected.Name} WHERE 1=1");
+
+                if (cols.Contains("IsActive"))
+                {
+                    result.Add($"\nAND IsActive = 1");
+                }
+
+                if (cols.Contains("SortOrder"))
+                {
+                    result.Add($"\nORDER BY SortOrder");
+                }
+                else
+                {
+                    result.Add($"\nORDER BY 1 DESC");
+                }
+
+                var sql = string.Join("", result);
+                var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                return await sqlService.QueryAsync<object>(command);
+            }
+
+            return Enumerable.Empty<object>();
+        }
+
         public async Task<IEnumerable<string>> GetColumns(DataModel selected, CancellationToken token)
         {
             if (token.IsCancellationRequested)
@@ -272,6 +307,22 @@ namespace SkyLineSQL
             return "";
         }
 
+        public async Task<IEnumerable<object>> GetPreviewGrid(DataModel selected, CancellationToken token)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+
+                var preview = await GetObjectGrid(selected, token);
+                return preview;
+            }
+            catch (Exception)
+            {
+
+            }
+
+            return Enumerable.Empty<object>();
+        }
 
         public async Task<IEnumerable<ParameterModel>> GetParameterDefination(DataModel selected, CancellationToken token)
         {
