@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -144,6 +145,8 @@ namespace SkyLineSQL
         public DataManager DM { get; set; }
         public SearchToken SearchToken { get; set; }
 
+        private CancellationTokenSource? cst;
+
         public ICommand ChangeDatabaseCommand { get; }
         public ICommand SearchDatabaseCommand { get; }
         public ICommand ReloadDatabaseCommand { get; }
@@ -186,13 +189,13 @@ namespace SkyLineSQL
             ExitCommand = new RelayCommand(ExecuteExitCommand);
         }
 
-        private async Task GenerateColumns()
+        private async Task GenerateColumns(CancellationToken token)
         {
             Conditions.Clear();
 
             int i = 1;
             ColumnsOfObject.Clear();
-            var cols = await DM.GetColumns(DatabaseObjects[SelectedIndex]);
+            var cols = await DM.GetColumns(DatabaseObjects[SelectedIndex], token);
             foreach (var col in cols.Take(10))
             {
                 ColumnsOfObject.Add(new(i, col));
@@ -200,9 +203,10 @@ namespace SkyLineSQL
             }
         }
 
-        private async Task GetPreviewText()
+        private async Task GetPreviewText(CancellationToken token)
         {
-            PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex]);
+            if (IsPopupOpen)
+                PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex], token);
         }
 
 
@@ -229,24 +233,33 @@ namespace SkyLineSQL
 
         private async Task ExecuteSearchDatabaseCommand(object key)
         {
-            char keyChar = (char)key;
-            if (char.IsDigit(keyChar))
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
+            try
             {
-                int k = int.Parse(key.ToString());
-                var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
+                // debounce delay (tweak as needed)
+                await Task.Delay(300, token);
 
-                if (c != null)
+                char keyChar = (char)key;
+                if (char.IsDigit(keyChar))
                 {
-                    Conditions.Add(c.Value);
-                    return;
+                    int k = int.Parse(key.ToString());
+                    var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
+
+                    if (c != null)
+                    {
+                        Conditions.Add(c.Value);
+                        return;
+                    }
                 }
-            }
 
-            WorkInProgress = Visibility.Visible;
-            DatabaseObjects.Clear();
-            Conditions.Clear();
+                WorkInProgress = Visibility.Visible;
+                DatabaseObjects.Clear();
+                Conditions.Clear();
 
-            Dictionary<string, List<string>> SQlCommands = new()
+                Dictionary<string, List<string>> SQlCommands = new()
             {
                     {"u",  new() { Constant.UserTable}},
                     {"p",  new() { Constant.Procedure }},
@@ -256,49 +269,55 @@ namespace SkyLineSQL
                     {"a",  new() { Constant.UserTable, Constant.Procedure, Constant.Trigger, Constant.FunctionIF, Constant.FunctionFN, Constant.View}},
             };
 
-            List<string> filters = new();
-            bool deepSearch = false;
-            foreach (var cmdStr in SearchToken.Command)
-            {
-                var cmd = cmdStr.ToString().ToLower();
-                if (SQlCommands.ContainsKey(cmd))
+                List<string> filters = new();
+                bool deepSearch = false;
+                foreach (var cmdStr in SearchToken.Command)
                 {
-                    filters.AddRange(SQlCommands[cmd]);
+                    var cmd = cmdStr.ToString().ToLower();
+                    if (SQlCommands.ContainsKey(cmd))
+                    {
+                        filters.AddRange(SQlCommands[cmd]);
+                    }
+                    else if (cmd.Equals(Constant.DeepSearch))
+                    {
+                        deepSearch = true;
+                    }
                 }
-                else if (cmd.Equals(Constant.DeepSearch))
+
+                if (deepSearch && filters.Count == 0)
                 {
-                    deepSearch = true;
+                    filters.AddRange(SQlCommands[Constant.AllSearch.ToLower()]);
                 }
-            }
 
-            if (deepSearch && filters.Count == 0)
-            {
-                filters.AddRange(SQlCommands[Constant.AllSearch.ToLower()]);
-            }
-
-            if (deepSearch)
-            {
-                foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text))
+                if (deepSearch)
                 {
-                    DatabaseObjects.Add(item);
+                    foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text, token))
+                    {
+                        DatabaseObjects.Add(item);
+                    }
                 }
-            }
-            else
-            {
-                foreach (var item in await DM.SearchObject(filters, SearchToken.Text))
+                else
                 {
-                    DatabaseObjects.Add(item);
+                    foreach (var item in await DM.SearchObject(filters, SearchToken.Text, token))
+                    {
+                        DatabaseObjects.Add(item);
+                    }
                 }
-            }
 
-            if (DatabaseObjects.Count > 0)
+                if (DatabaseObjects.Count > 0)
+                {
+                    SelectedIndex = 0;
+
+                    GetPreviewText(token);
+                    GenerateColumns(token);
+                }
+
+
+            }
+            catch (Exception)
             {
-                SelectedIndex = 0;
-
-                GetPreviewText();
-                GenerateColumns();
+                // ignored
             }
-
             WorkInProgress = Visibility.Hidden;
         }
 
@@ -317,12 +336,16 @@ namespace SkyLineSQL
         }
         private async Task ExecuteNavigationUpCommand(object param)
         {
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
             var index = (int)param;
             SelectedIndex = index - 1;
             //IsPopupOpen = false;
 
-            GetPreviewText();
-            GenerateColumns();
+            GetPreviewText(token);
+            GenerateColumns(token);
         }
 
         private bool CanExecuteNavigationDownCommand(object param)
@@ -332,12 +355,16 @@ namespace SkyLineSQL
         }
         private async Task ExecuteNavigationDownCommand(object param)
         {
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
             var index = (int)param;
             SelectedIndex = index + 1;
             //IsPopupOpen = false;
 
-            GetPreviewText();
-            GenerateColumns();
+            GetPreviewText(token);
+            GenerateColumns(token);
         }
 
 
@@ -347,6 +374,10 @@ namespace SkyLineSQL
         }
         private async Task ExecuteSelectionCommand(object param)
         {
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
             MainWindow window = param as MainWindow;
             if (window is not null)
             {
@@ -364,7 +395,7 @@ namespace SkyLineSQL
                 var SelectedItem = DatabaseObjects[SelectedIndex];
                 if (SelectedItem is not null)
                 {
-                    var text = await DM.GetObject(SelectedItem, Conditions);
+                    var text = await DM.GetObject(SelectedItem, Conditions, token);
                     Clipboard.SetText(text);
                     Conditions.Clear();
                 }

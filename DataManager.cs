@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SkyLineSQL
@@ -128,15 +129,19 @@ namespace SkyLineSQL
             return new SqlConnection(masterConnString);
         }
 
-        public async Task<IEnumerable<DataModel>> SearchObject(List<string> commands, string search)
+        public async Task<IEnumerable<DataModel>> SearchObject(List<string> commands, string search, CancellationToken token)
         {
             try
             {
+                token.ThrowIfCancellationRequested();
+
                 if (commands.Count > 0)
                 {
                     var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
-                    return await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;";
+                    var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                    return await sqlService.QueryAsync<DataModel>(command);
                 }
             }
             catch (Exception)
@@ -147,19 +152,25 @@ namespace SkyLineSQL
             return Enumerable.Empty<DataModel>();
         }
 
-        public async Task<IEnumerable<DataModel>> SearchDeepObject(List<string> commands, string search)
+        public async Task<IEnumerable<DataModel>> SearchDeepObject(List<string> commands, string search, CancellationToken token)
         {
             try
             {
+                token.ThrowIfCancellationRequested();
+
                 if (commands.Count > 0)
                 {
                     var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
-                    var result = await sqlService.QueryAsync<DataModel>($"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and object_definition(object_id) like '%{search}%' ORDER BY Len(Name), modify_date desc;", commandType: CommandType.Text);
+                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and (object_definition(object_id) like '%{search}%' or name like '%{search}%') ORDER BY Len(Name), modify_date desc;";
+                    var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                    var result = await sqlService.QueryAsync<DataModel>(command);
 
                     if (commands.Contains(Constant.UserTable) || commands.Contains(Constant.View)) // No need to search in table column
                     {
-                        var sub_result = await sqlService.QueryAsync<DataModel>($"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U', 'V') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)", commandType: CommandType.Text);
+                        var sub_sql = $"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U', 'V') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)";
+                        var sub_command = new CommandDefinition(sub_sql, commandType: CommandType.Text, cancellationToken: token);
+                        var sub_result = await sqlService.QueryAsync<DataModel>(sub_command);
                         result = result.Union(sub_result);
                     }
 
@@ -175,12 +186,15 @@ namespace SkyLineSQL
             return Enumerable.Empty<DataModel>();
         }
 
-        public async Task<string> GetObject(DataModel selected, List<string> conditions)
+        public async Task<string> GetObject(DataModel selected, List<string> conditions, CancellationToken token)
         {
+            if (token.IsCancellationRequested)
+                return string.Empty;
+
             if (selected.Type.Equals(Constant.UserTable))
             {
                 //var cols = await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION desc");
-                var cols = await GetColumns(selected);
+                var cols = await GetColumns(selected, token);
 
                 var result = new List<string>();
                 result.Add($"SELECT top 100 *\nFROM {selected.Name} WHERE 1=1");
@@ -209,20 +223,27 @@ namespace SkyLineSQL
             }
             else
             {
-                var text = await sqlService.QueryFirstAsync<string>($"SELECT object_definition(object_id) FROM sys.objects where object_id = {selected.ObjectId};", commandType: CommandType.Text);
+                var sql = $"SELECT object_definition(object_id) FROM sys.objects where object_id = {selected.ObjectId};";
+                var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                var text = await sqlService.QueryFirstAsync<string>(command);
                 text = ButifyText(text, selected.Type);
 
                 return text.Trim();
             }
         }
 
-        public async Task<IEnumerable<string>> GetColumns(DataModel selected)
+        public async Task<IEnumerable<string>> GetColumns(DataModel selected, CancellationToken token)
         {
+            if (token.IsCancellationRequested)
+                return Enumerable.Empty<string>();
+
             if (selected.Type.Equals(Constant.UserTable))
             {
                 try
                 {
-                    return await sqlService.QueryAsync<string>($"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION");
+                    var sql = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION";
+                    var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                    return await sqlService.QueryAsync<string>(command);
                 }
                 catch (Exception)
                 {
@@ -234,11 +255,13 @@ namespace SkyLineSQL
         }
 
 
-        public async Task<string> GetPreviewText(DataModel selected)
+        public async Task<string> GetPreviewText(DataModel selected, CancellationToken token)
         {
             try
             {
-                var preview = await GetObject(selected, new List<string>());
+                token.ThrowIfCancellationRequested();
+
+                var preview = await GetObject(selected, new List<string>(), token);
                 return preview;
             }
             catch (Exception)
@@ -250,8 +273,11 @@ namespace SkyLineSQL
         }
 
 
-        public async Task<IEnumerable<ParameterModel>> GetParameterDefination(DataModel selected)
+        public async Task<IEnumerable<ParameterModel>> GetParameterDefination(DataModel selected, CancellationToken token)
         {
+            if (token.IsCancellationRequested)
+                return Enumerable.Empty<ParameterModel>();
+
             var parameterSQL = "";
             if (selected.Type.Equals(Constant.Procedure) || selected.Type.Equals(Constant.FunctionFN) || selected.Type.Equals(Constant.FunctionIF))
             {
@@ -262,7 +288,8 @@ namespace SkyLineSQL
                 parameterSQL = $"SELECT c.name AS Name, t.name AS DataType, c.max_length as MaxLength FROM sys.columns c JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE c.object_id = {selected.ObjectId}";
             }
 
-            return await sqlService.QueryAsync<ParameterModel>(parameterSQL, commandType: CommandType.Text);
+            var command = new CommandDefinition(parameterSQL, commandType: CommandType.Text, cancellationToken: token);
+            return await sqlService.QueryAsync<ParameterModel>(command);
         }
 
         public string ButifyText(string text, string type)
