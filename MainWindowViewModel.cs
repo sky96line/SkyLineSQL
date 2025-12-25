@@ -252,9 +252,6 @@ namespace SkyLineSQL
 
             try
             {
-                // debounce delay (tweak as needed)
-                await Task.Delay(300, token);
-
                 char keyChar = (char)key;
                 if (char.IsDigit(keyChar))
                 {
@@ -268,19 +265,22 @@ namespace SkyLineSQL
                     }
                 }
 
+                // debounce delay (tweak as needed)
+                await Task.Delay(300, token);
+
                 WorkInProgress = Visibility.Visible;
                 DatabaseObjects.Clear();
                 Conditions.Clear();
 
                 Dictionary<string, List<string>> SQlCommands = new()
-            {
-                    {"u",  new() { Constant.UserTable}},
-                    {"p",  new() { Constant.Procedure }},
-                    {"t",  new() { Constant.Trigger}},
-                    {"f",  new() { Constant.FunctionIF, Constant.FunctionFN}},
-                    {"v",  new() { Constant.View}},
-                    {"a",  new() { Constant.UserTable, Constant.Procedure, Constant.Trigger, Constant.FunctionIF, Constant.FunctionFN, Constant.View}},
-            };
+                {
+                        {"u",  new() { Constant.UserTable}},
+                        {"p",  new() { Constant.Procedure }},
+                        {"t",  new() { Constant.Trigger}},
+                        {"f",  new() { Constant.FunctionIF, Constant.FunctionFN}},
+                        {"v",  new() { Constant.View}},
+                        {"a",  new() { Constant.UserTable, Constant.Procedure, Constant.Trigger, Constant.FunctionIF, Constant.FunctionFN, Constant.View}},
+                };
 
                 List<string> filters = new();
                 bool deepSearch = false;
