@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 using Newtonsoft.Json;
 using SkyLineSQL.Utility;
+using SkyLineSQL.Visitors;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -77,12 +79,16 @@ namespace SkyLineSQL
             set { currentConnection = value; OnPropertyChanged(); }
         }
 
+
+        private Dictionary<(string Database, string Schema, string Table), HashSet<string>> tableColumns = new();
+
         private List<ConnectionModel> Connections = new();
         private IDbConnection sqlService;
 
         public DataManager()
         {
             LoadConnections();
+            Task.Run(async () => await LoadExternalDBColumns());
         }
 
 
@@ -100,6 +106,61 @@ namespace SkyLineSQL
             {
                 CurrentConnection = Connections.ElementAt(0);
                 sqlService = new SqlConnection(CurrentConnection.ConnectionString);
+            }
+        }
+
+        public async Task LoadExternalDBColumns()
+        {
+            var conn_Str = "Data Source=10.10.0.44;Initial Catalog=PRISMProductExternalDBTest;User ID=Developer;Password=KJ@3g!9g$2; MultipleActiveResultSets=true;TrustServerCertificate=True";
+            using (var exService = new SqlConnection(conn_Str))
+            {
+                var data = await exService.QueryAsync<TableMetaData>(@"SELECT
+                                    s.name            AS SchemaName,
+                                    o.name            AS TableName,
+                                    c.name            AS ColumnName
+                                FROM sys.objects o
+                                JOIN sys.schemas s 
+                                    ON s.schema_id = o.schema_id
+                                JOIN sys.columns c 
+                                    ON c.object_id = o.object_id
+                                WHERE o.type IN ('U', 'V')   -- U = table, V = view
+                                ORDER BY SchemaName, TableName, ColumnName;", commandType: CommandType.Text);
+
+                foreach (var item in data)
+                {
+                    var key = (Database: "PRISMProductExternalDBTest", Schema: item.SchemaName, Table: item.TableName);
+                    if (!tableColumns.ContainsKey(key))
+                    {
+                        tableColumns[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    }
+                    tableColumns[key].Add(item.ColumnName);
+                }
+            }
+
+            conn_Str = "Data Source=10.10.0.44;Initial Catalog=PRISMProductHBISTest;User ID=Developer;Password=KJ@3g!9g$2; MultipleActiveResultSets=true;TrustServerCertificate=True";
+            using (var exService = new SqlConnection(conn_Str))
+            {
+                var data = await exService.QueryAsync<TableMetaData>(@"SELECT
+                                    s.name            AS SchemaName,
+                                    o.name            AS TableName,
+                                    c.name            AS ColumnName
+                                FROM sys.objects o
+                                JOIN sys.schemas s 
+                                    ON s.schema_id = o.schema_id
+                                JOIN sys.columns c 
+                                    ON c.object_id = o.object_id
+                                WHERE o.type IN ('U', 'V')   -- U = table, V = view
+                                ORDER BY SchemaName, TableName, ColumnName;", commandType: CommandType.Text);
+
+                foreach (var item in data)
+                {
+                    var key = (Database: "PRISMProductHBISTest", Schema: item.SchemaName, Table: item.TableName);
+                    if (!tableColumns.ContainsKey(key))
+                    {
+                        tableColumns[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    }
+                    tableColumns[key].Add(item.ColumnName);
+                }
             }
         }
 
@@ -185,6 +246,7 @@ namespace SkyLineSQL
 
             return Enumerable.Empty<DataModel>();
         }
+
 
         public async Task<string> GetObject(DataModel selected, List<string> conditions, CancellationToken token)
         {
@@ -306,6 +368,92 @@ namespace SkyLineSQL
 
             return "";
         }
+
+
+        public async Task<string> PreviewExternalDBObject(DataModel selected, CancellationToken token)
+        {
+            try
+            {
+                var sql = $"SELECT object_definition(object_id) FROM sys.objects where object_id = {selected.ObjectId};";
+                var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                var text = await sqlService.QueryFirstAsync<string>(command);
+                text = ButifyText(text, selected.Type);
+
+                var parser = new TSql150Parser(false);
+                IList<ParseError> errors;
+
+                TSqlFragment fragment;
+                using (var reader = new StringReader(text.Trim()))
+                {
+                    fragment = parser.Parse(reader, out errors);
+                }
+
+                var tableCollector = new TableCollector();
+                fragment.Accept(tableCollector);
+
+                var columnCollector = new ColumnCollector(
+                tableCollector.Tables,
+                tableCollector.AliasMap,
+                tableColumns);
+
+                fragment.Accept(columnCollector);
+
+
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in columnCollector.Usage.OrderBy(x => x.Key))
+                {
+                    foreach (var s in item.Value)
+                    {
+                        sb.AppendLine($"{item.Key} => {s}");
+                    }
+                }
+                return sb.ToString();
+            }
+            catch (Exception)
+            {
+                // TODO: Need to handle exception
+            }
+
+            return "";
+        }
+
+        public async Task<string> PreviewTableObject(DataModel selected, string table, CancellationToken token)
+        {
+            try
+            {
+                var sql = $"SELECT object_definition(object_id) FROM sys.objects where object_id = {selected.ObjectId};";
+                var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                var text = await sqlService.QueryFirstAsync<string>(command);
+                text = ButifyText(text, selected.Type);
+
+                var parser = new TSql150Parser(false);
+                IList<ParseError> errors;
+
+                TSqlFragment fragment;
+                using (var reader = new StringReader(text.Trim()))
+                {
+                    fragment = parser.Parse(reader, out errors);
+                }
+
+                var visitor = new TableColumnVisitorV2(table);
+                fragment.Accept(visitor);
+
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in visitor.Columns)
+                {
+                    sb.AppendLine(item);
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception)
+            {
+                // TODO: Need to handle exception
+            }
+
+            return "";
+        }
+
 
         public async Task<IEnumerable<object>> GetPreviewGrid(DataModel selected, CancellationToken token)
         {

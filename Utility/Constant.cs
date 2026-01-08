@@ -12,5 +12,6 @@
         public const string View = "V";
 
         public const string DeepSearch = "d";
+        public const string ExternalSearch = "x";
     }
 }

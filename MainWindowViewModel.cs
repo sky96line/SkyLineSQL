@@ -164,8 +164,13 @@ namespace SkyLineSQL
         public ICommand SelectionNameCommand { get; }
         public ICommand PopupCommand { get; }
 
+        public ICommand ChangePreviewModeCommand { get; }
+
+
         public ICommand HideWindowCommand { get; }
         public ICommand ExitCommand { get; }
+
+        string preview_mode = "External"; // "Normal" | "External" | "Table"
 
         public MainWindowViewModel()
         {
@@ -192,6 +197,8 @@ namespace SkyLineSQL
             SelectionNameCommand = new RelayCommandAsync(ExecuteSelectionNameCommand, CanExecuteSelectionNameCommand);
             PopupCommand = new RelayCommandAsync(ExecutePopupCommand, CanExecutePopupCommand);
 
+            ChangePreviewModeCommand = new RelayCommandAsync(ExecuteChangePreviewModeCommand, CanExecuteChangePreviewModeCommand);
+
             HideWindowCommand = new RelayCommand(ExecuteHideWindowCommand);
             ExitCommand = new RelayCommand(ExecuteExitCommand);
         }
@@ -210,10 +217,24 @@ namespace SkyLineSQL
             }
         }
 
+
         private async Task GetPreviewText(CancellationToken token)
         {
             if (IsPopupOpen)
-                PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex], token);
+            {
+                if (preview_mode.Equals("Normal"))
+                {
+                    PreviewText = await DM.GetPreviewText(DatabaseObjects[SelectedIndex], token);
+                }
+                else if (preview_mode.Equals("External"))
+                {
+                    PreviewText = await DM.PreviewExternalDBObject(DatabaseObjects[SelectedIndex], token);
+                }
+                else if (preview_mode.Equals("Table"))
+                {
+                    PreviewText = await DM.PreviewTableObject(DatabaseObjects[SelectedIndex], "Jobs", token);
+                }
+            }
         }
 
         private async Task GetPreviewGrid(CancellationToken token)
@@ -284,6 +305,7 @@ namespace SkyLineSQL
 
                 List<string> filters = new();
                 bool deepSearch = false;
+
                 foreach (var cmdStr in SearchToken.Command)
                 {
                     var cmd = cmdStr.ToString().ToLower();
@@ -432,13 +454,18 @@ namespace SkyLineSQL
                 window.Hide();
             }
 
-            var SelectedItem = DatabaseObjects[SelectedIndex];
-            if (SelectedItem is not null)
+            if (!preview_mode.Equals("Normal") && IsPopupOpen)
             {
-                //var text = await DM.GetObject(SelectedItem);
-                //SSMSHelper.OpenQueryInSSMS(DM.CurrentConnection.ConnectionString, text);
-
-                Clipboard.SetText(SelectedItem.Name);
+                Clipboard.SetText(PreviewText);
+                Conditions.Clear();
+            }
+            else
+            {
+                var SelectedItem = DatabaseObjects[SelectedIndex];
+                if (SelectedItem is not null)
+                {
+                    Clipboard.SetText(SelectedItem.Name);
+                }
             }
         }
 
@@ -453,6 +480,34 @@ namespace SkyLineSQL
         }
 
 
+        private bool CanExecuteChangePreviewModeCommand(object param)
+        {
+            return true;
+        }
+        private async Task ExecuteChangePreviewModeCommand(object param)
+        {
+            if (preview_mode.Equals("Normal"))
+            {
+                preview_mode = "External";
+            }
+            else if (preview_mode.Equals("External"))
+            {
+                preview_mode = "Table";
+            }
+            else if (preview_mode.Equals("Table"))
+            {
+                preview_mode = "Normal";
+            }
+            else
+            {
+                preview_mode = "Normal";
+            }
+            ;
+            ColumnsOfObject.Add(new(0, preview_mode));
+            await Task.Delay(1000);
+            ColumnsOfObject.Clear();
+        }
+
 
         private void ExecuteHideWindowCommand(object param)
         {
@@ -463,7 +518,7 @@ namespace SkyLineSQL
                 window.Hide();
             }
         }
-        private void ExecuteExitCommand(object param) => Application.Current.Shutdown();
+        private void ExecuteExitCommand(object param) => System.Windows.Application.Current.Shutdown();
 
 
         #region Notify
