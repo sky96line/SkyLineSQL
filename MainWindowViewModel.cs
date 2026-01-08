@@ -502,7 +502,7 @@ namespace SkyLineSQL
             {
                 preview_mode = "Normal";
             }
-            ;
+
             ColumnsOfObject.Add(new(0, preview_mode));
             await Task.Delay(1000);
             ColumnsOfObject.Clear();
