@@ -161,24 +161,24 @@
                 </TextBlock>
             </StackPanel>
 
-            <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0" Text="{Binding TextBox, UpdateSourceTrigger=PropertyChanged}">
-                <i:Interaction.Behaviors>
+            <TextBox x:Name="SearchBox_txt" CaretBrush="White" Grid.Row="1" Grid.Column="0" Text="{Binding TextBox, UpdateSourceTrigger=PropertyChanged}" >
+                <!--<i:Interaction.Behaviors>
                     <util:KeyToCharBehavior Command="{Binding SearchDatabaseCommand}" />
-                </i:Interaction.Behaviors>
+                </i:Interaction.Behaviors>-->
                 
                 <!--<i:Interaction.Triggers>
-                    --><!-- Change the EventName to KeyDown or KeyUp --><!--
+                     --><!--Change the EventName to KeyDown or KeyUp--><!-- 
                     <i:EventTrigger EventName="KeyDown">
-                        --><!-- Pass the event arguments to the command --><!--
+                         --><!--Pass the event arguments to the command--><!-- 
                         <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" CommandParameter="{Binding Text, RelativeSource={RelativeSource AncestorType=TextBox}}" />
                     </i:EventTrigger>
                 </i:Interaction.Triggers>-->
                 
-                <!--<i:Interaction.Triggers>
+                <i:Interaction.Triggers>
                     <i:EventTrigger EventName="TextChanged">
                         <i:InvokeCommandAction Command="{Binding SearchDatabaseCommand}" CommandParameter="{Binding Text, ElementName=SearchBox_txt}" />
                     </i:EventTrigger>
-                </i:Interaction.Triggers>-->
+                </i:Interaction.Triggers>
 
                 <TextBox.InputBindings>
                     <KeyBinding Key="Up" Command="{Binding Path=NavigationUpCommand}" CommandParameter="{Binding ElementName=dg_source, Path=SelectedIndex}"/>  
@@ -187,6 +187,7 @@
                     <KeyBinding Key="Add" Command="{Binding Path=SelectionCommand}" CommandParameter="{Binding ElementName=main_Window}" />
                     <KeyBinding Key="F1" Command="{Binding Path=PopupCommand}" CommandParameter="{Binding ElementName=rctBox}" />
                     <KeyBinding Key="F2" Command="{Binding Path=ChangePreviewModeCommand}" />
+                    <KeyBinding Key="Tab" Command="{Binding Path=TabClickCommand}"/>
 
                     <KeyBinding Key="Return" Modifiers="Ctrl" Command="{Binding Path=SelectionNameCommand}" CommandParameter="{Binding ElementName=main_Window}" />
                     <KeyBinding Key="Add" Modifiers="Ctrl" Command="{Binding Path=SelectionNameCommand}" CommandParameter="{Binding ElementName=main_Window}" />
@@ -197,9 +198,10 @@
 
             <DataGrid x:Name="dg_source" Grid.Row="3" Grid.Column="0"
                   ItemsSource="{Binding DatabaseObjects}"
-                  SelectedIndex="{Binding SelectedIndex}"
+                  SelectedIndex="{Binding SelectedIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                   SelectionChanged="dg_source_SelectionChanged">
                 <DataGrid.Columns>
+                    
                     <DataGridTemplateColumn Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -212,6 +214,13 @@
                                         </MultiBinding>
                                     </ContentControl.Content>
                                 </ContentControl>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StarString}" Margin="0" TextAlignment="Right" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

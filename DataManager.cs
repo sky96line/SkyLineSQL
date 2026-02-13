@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static SkyLineSQL.MainWindowViewModel;
 
 namespace SkyLineSQL
 {
@@ -28,6 +29,10 @@ namespace SkyLineSQL
             get { return type; }
             set { type = value.Trim(); }
         }
+
+        public int UsageCount { get; set; } = 0;
+        public bool Star => UsageCount > 2;
+        public string StarString => Star ? "★" : "";
 
         public int ObjectId { get; set; }
     }
@@ -88,10 +93,7 @@ namespace SkyLineSQL
         public DataManager()
         {
             LoadConnections();
-            Task.Run(async () => await LoadExternalDBColumns());
         }
-
-
 
         public void LoadConnections()
         {
@@ -109,12 +111,20 @@ namespace SkyLineSQL
             }
         }
 
-        public async Task LoadExternalDBColumns()
+        public async Task LoadExternalDBColumns(ConnectionModel connection)
         {
-            var conn_Str = "Data Source=10.10.0.44;Initial Catalog=PRISMProductExternalDBTest;User ID=Developer;Password=KJ@3g!9g$2; MultipleActiveResultSets=true;TrustServerCertificate=True";
-            using (var exService = new SqlConnection(conn_Str))
+            if (connection.ExternalDB is null)
+                return;
+            if (!connection.ExternalDB.Any())
+                return;
+
+            foreach (var ex_db in connection.ExternalDB)
             {
-                var data = await exService.QueryAsync<TableMetaData>(@"SELECT
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ex_db);
+
+                using (var exService = new SqlConnection(ex_db))
+                {
+                    var data = await exService.QueryAsync<TableMetaData>(@"SELECT
                                     s.name            AS SchemaName,
                                     o.name            AS TableName,
                                     c.name            AS ColumnName
@@ -126,45 +136,20 @@ namespace SkyLineSQL
                                 WHERE o.type IN ('U', 'V')   -- U = table, V = view
                                 ORDER BY SchemaName, TableName, ColumnName;", commandType: CommandType.Text);
 
-                foreach (var item in data)
-                {
-                    var key = (Database: "PRISMProductExternalDBTest", Schema: item.SchemaName, Table: item.TableName);
-                    if (!tableColumns.ContainsKey(key))
+                    foreach (var item in data)
                     {
-                        tableColumns[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var key = (Database: builder.InitialCatalog, Schema: item.SchemaName, Table: item.TableName);
+                        if (!tableColumns.ContainsKey(key))
+                        {
+                            tableColumns[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        tableColumns[key].Add(item.ColumnName);
                     }
-                    tableColumns[key].Add(item.ColumnName);
-                }
-            }
-
-            conn_Str = "Data Source=10.10.0.44;Initial Catalog=PRISMProductHBISTest;User ID=Developer;Password=KJ@3g!9g$2; MultipleActiveResultSets=true;TrustServerCertificate=True";
-            using (var exService = new SqlConnection(conn_Str))
-            {
-                var data = await exService.QueryAsync<TableMetaData>(@"SELECT
-                                    s.name            AS SchemaName,
-                                    o.name            AS TableName,
-                                    c.name            AS ColumnName
-                                FROM sys.objects o
-                                JOIN sys.schemas s 
-                                    ON s.schema_id = o.schema_id
-                                JOIN sys.columns c 
-                                    ON c.object_id = o.object_id
-                                WHERE o.type IN ('U', 'V')   -- U = table, V = view
-                                ORDER BY SchemaName, TableName, ColumnName;", commandType: CommandType.Text);
-
-                foreach (var item in data)
-                {
-                    var key = (Database: "PRISMProductHBISTest", Schema: item.SchemaName, Table: item.TableName);
-                    if (!tableColumns.ContainsKey(key))
-                    {
-                        tableColumns[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    }
-                    tableColumns[key].Add(item.ColumnName);
                 }
             }
         }
 
-        public void ChangeDatabase(int offset)
+        public async Task ChangeDatabase(int offset)
         {
             //var currentConn = Connections.FirstOrDefault(x => x.ConnectionString == CurrentConnection.ConnectionString);
             int index = Connections.IndexOf(CurrentConnection);
@@ -180,6 +165,8 @@ namespace SkyLineSQL
             var newConnection = Connections[nextIndex];
             CurrentConnection = newConnection;
             sqlService = new SqlConnection(CurrentConnection.ConnectionString);
+
+            await LoadExternalDBColumns(CurrentConnection);
         }
 
         public IDbConnection GetProfilerConnection()
@@ -194,13 +181,36 @@ namespace SkyLineSQL
         {
             try
             {
+                if (search.Length > 1)
+                {
+                    var firstChar = search[0];
+                    var lastChar = search[search.Length - 1];
+
+                    if (char.IsLetterOrDigit(firstChar) && char.IsLetterOrDigit(lastChar))
+                    {
+                        search = "%" + search + "%";
+                    }
+                    else if (char.IsLetterOrDigit(firstChar))
+                    {
+                        search = "%" + search;
+                    }
+                    else if (char.IsLetterOrDigit(lastChar))
+                    {
+                        search = search + "%";
+                    }
+                }
+                else
+                {
+                    search = "%" + search + "%";
+                }
+
                 token.ThrowIfCancellationRequested();
 
                 if (commands.Count > 0)
                 {
                     var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
-                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '%{search}%' ORDER BY Len(Name), modify_date desc;";
+                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and Name like '{search}' ORDER BY Len(Name), modify_date desc;";
                     var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
                     return await sqlService.QueryAsync<DataModel>(command);
                 }
@@ -217,19 +227,42 @@ namespace SkyLineSQL
         {
             try
             {
+                if (search.Length > 1)
+                {
+                    var firstChar = search[0];
+                    var lastChar = search[search.Length - 1];
+
+                    if (char.IsLetterOrDigit(firstChar) && char.IsLetterOrDigit(lastChar))
+                    {
+                        search = "%" + search + "%";
+                    }
+                    else if (char.IsLetterOrDigit(firstChar))
+                    {
+                        search = "%" + search;
+                    }
+                    else if (char.IsLetterOrDigit(lastChar))
+                    {
+                        search = search + "%";
+                    }
+                }
+                else
+                {
+                    search = "%" + search + "%";
+                }
+
                 token.ThrowIfCancellationRequested();
 
                 if (commands.Count > 0)
                 {
                     var filter = string.Join(",", commands.Select(x => $"'{x}'"));
 
-                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and (object_definition(object_id) like '%{search}%' or name like '%{search}%') ORDER BY Len(Name), modify_date desc;";
+                    var sql = $"SELECT name as Name, type as Type, object_id as ObjectId FROM sys.objects where type in ({filter}) and (object_definition(object_id) like '{search}' or name like '{search}') ORDER BY Len(Name), modify_date desc;";
                     var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
                     var result = await sqlService.QueryAsync<DataModel>(command);
 
                     if (commands.Contains(Constant.UserTable) || commands.Contains(Constant.View)) // No need to search in table column
                     {
-                        var sub_sql = $"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U', 'V') and c.name like '%{search}%') AS a ORDER BY LEN(a.Name)";
+                        var sub_sql = $"SELECT * FROM (SELECT distinct t.name as Name, type as Type, t.object_id as ObjectId FROM sys.objects t join sys.columns c on c.object_id = t.object_id where type in ('U', 'V') and c.name like '{search}') AS a ORDER BY LEN(a.Name)";
                         var sub_command = new CommandDefinition(sub_sql, commandType: CommandType.Text, cancellationToken: token);
                         var sub_result = await sqlService.QueryAsync<DataModel>(sub_command);
                         result = result.Union(sub_result);
@@ -334,11 +367,24 @@ namespace SkyLineSQL
             if (token.IsCancellationRequested)
                 return Enumerable.Empty<string>();
 
-            if (selected.Type.Equals(Constant.UserTable))
+            if (selected.Type.Equals(Constant.UserTable) || selected.Type.Equals(Constant.View))
             {
                 try
                 {
                     var sql = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected.Name}' ORDER BY ORDINAL_POSITION";
+                    var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+                    return await sqlService.QueryAsync<string>(command);
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+            else if (selected.Type.Equals(Constant.Procedure) || selected.Type.Equals(Constant.FunctionFN) || selected.Type.Equals(Constant.FunctionIF))
+            {
+                try
+                {
+                    var sql = $"SELECT p.name FROM sys.parameters p JOIN sys.types t ON p.user_type_id = t.user_type_id WHERE p.object_id = {selected.ObjectId};";
                     var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
                     return await sqlService.QueryAsync<string>(command);
                 }
@@ -541,7 +587,51 @@ namespace SkyLineSQL
             return text;
         }
 
+        public async Task<List<MetaData>> GenerateReport(DataModel res, CancellationToken token)
+        {
+            List<MetaData> metaDatas = new List<MetaData>();
+            //StringBuilder sb = new StringBuilder();
 
+            var sql = $"SELECT object_definition(object_id) FROM sys.objects where object_id = {res.ObjectId};";
+            var command = new CommandDefinition(sql, commandType: CommandType.Text, cancellationToken: token);
+            var text = await sqlService.QueryFirstAsync<string>(command);
+            text = ButifyText(text, Constant.Procedure);
+
+            var parser = new TSql150Parser(false);
+            IList<ParseError> errors;
+
+            TSqlFragment fragment;
+            using (var reader = new StringReader(text.Trim()))
+            {
+                fragment = parser.Parse(reader, out errors);
+            }
+
+            var tableCollector = new TableCollector();
+            fragment.Accept(tableCollector);
+
+            var columnCollector = new ColumnCollector(
+            tableCollector.Tables,
+            tableCollector.AliasMap,
+            tableColumns);
+
+            fragment.Accept(columnCollector);
+
+            foreach (var item in columnCollector.Usage.OrderBy(x => x.Key))
+            {
+                foreach (var s in item.Value)
+                {
+                    metaDatas.Add(new MetaData
+                    {
+                        SPName = res.Name,
+                        TableName = item.Key,
+                        ColumnName = s
+                    });
+                    //sb.AppendLine($"{res.Name},{item.Key},{s}");
+                }
+            }
+
+            return metaDatas;
+        }
 
         #region Notify
 

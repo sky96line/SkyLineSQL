@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Interop;
 
 namespace SkyLineSQL
@@ -164,6 +165,16 @@ namespace SkyLineSQL
         {
             if (vm.SelectedIndex > -1 && vm.DatabaseObjects.Count > 0)
                 dg_source.ScrollIntoView(vm.DatabaseObjects[vm.SelectedIndex]);
+        }
+
+        private void SearchBox_txt_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Tab)
+            {
+                e.Handled = true; // stops focus from moving
+
+                vm.TabClickCommand.Execute(null);
+            }
         }
     }
 }

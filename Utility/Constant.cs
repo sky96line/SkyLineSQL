@@ -11,6 +11,8 @@
         public const string FunctionFN = "FN";
         public const string View = "V";
 
+        public const string Column = "C";
+
         public const string DeepSearch = "d";
         public const string ExternalSearch = "x";
     }

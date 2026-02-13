@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -64,6 +65,19 @@ namespace SkyLineSQL
             set { isPopupOpen = value; OnPropertyChanged(); }
         }
 
+        private bool inTab;
+        public bool InTab
+        {
+            get { return inTab; }
+            set { inTab = value; OnPropertyChanged(); }
+        }
+
+        private List<DataModel> tab_cols = new();
+
+
+
+
+
         private string popupHeading;
 
         public string PopupHeading
@@ -119,6 +133,8 @@ namespace SkyLineSQL
 
         public ObservableCollection<KPV> ColumnsOfObject { get; set; }
 
+        private Dictionary<string, int> usage = new();
+
         public List<string> Conditions { get; set; }
 
 
@@ -165,6 +181,8 @@ namespace SkyLineSQL
         public ICommand PopupCommand { get; }
 
         public ICommand ChangePreviewModeCommand { get; }
+        public ICommand TabClickCommand { get; }
+
 
 
         public ICommand HideWindowCommand { get; }
@@ -198,10 +216,51 @@ namespace SkyLineSQL
             PopupCommand = new RelayCommandAsync(ExecutePopupCommand, CanExecutePopupCommand);
 
             ChangePreviewModeCommand = new RelayCommandAsync(ExecuteChangePreviewModeCommand, CanExecuteChangePreviewModeCommand);
+            TabClickCommand = new RelayCommandAsync(ExecuteTabClickCommandCommand, CanExecuteTabClickCommandCommand);
 
             HideWindowCommand = new RelayCommand(ExecuteHideWindowCommand);
             ExitCommand = new RelayCommand(ExecuteExitCommand);
         }
+
+        private bool CanExecuteTabClickCommandCommand(object arg)
+        {
+            return DatabaseObjects.Count > 0 && SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count;
+        }
+
+        private async Task ExecuteTabClickCommandCommand(object arg)
+        {
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
+            InTab = false;
+            var item = DatabaseObjects[SelectedIndex];
+
+            tab_cols.Clear();
+            DatabaseObjects.Clear();
+            ColumnsOfObject.Clear();
+
+            var cols = await DM.GetColumns(item, token);
+            foreach (var col in cols)
+            {
+                DataModel dm = new()
+                {
+                    Name = col,
+                    Type = Constant.Column,
+                    ObjectId = 0
+                };
+                tab_cols.Add(dm);
+                DatabaseObjects.Add(dm);
+            }
+
+            if (DatabaseObjects.Count > 0)
+            {
+                InTab = true;
+                TextBox = "";
+                SelectedIndex = 0;
+            }
+        }
+
 
         private async Task GenerateColumns(CancellationToken token)
         {
@@ -262,38 +321,52 @@ namespace SkyLineSQL
 
         private bool CanExecuteSearchDatabaseCommand(object param)
         {
-            return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0);
+            return (SearchToken.Text.Length >= 3 && SearchToken.Command.Length > 0) || InTab;
         }
 
         private async Task ExecuteSearchDatabaseCommand(object key)
         {
-            cst?.Cancel();              // cancel previous search
-            cst = new CancellationTokenSource();
-            var token = cst.Token;
-
-            try
+            if (InTab)
             {
-                char keyChar = (char)key;
-                if (char.IsDigit(keyChar))
-                {
-                    int k = int.Parse(key.ToString());
-                    var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
+                var cols = tab_cols.Where(x => x.Name.Contains(TextBox, StringComparison.OrdinalIgnoreCase)).ToList();
+                DatabaseObjects.Clear();
 
-                    if (c != null)
-                    {
-                        Conditions.Add(c.Value);
-                        return;
-                    }
+                foreach (var col in cols)
+                {
+                    DatabaseObjects.Add(col);
                 }
 
-                // debounce delay (tweak as needed)
-                await Task.Delay(300, token);
+                SelectedIndex = 0;
+            }
+            else
+            {
+                cst?.Cancel();              // cancel previous search
+                cst = new CancellationTokenSource();
+                var token = cst.Token;
 
-                WorkInProgress = Visibility.Visible;
-                DatabaseObjects.Clear();
-                Conditions.Clear();
+                try
+                {
+                    //char keyChar = (char)key;
+                    //if (char.IsDigit(keyChar))
+                    //{
+                    //    int k = int.Parse(key.ToString());
+                    //    var c = ColumnsOfObject.FirstOrDefault(x => x.Key == k);
 
-                Dictionary<string, List<string>> SQlCommands = new()
+                    //    if (c != null)
+                    //    {
+                    //        Conditions.Add(c.Value);
+                    //        return;
+                    //    }
+                    //}
+
+                    // debounce delay (tweak as needed)
+                    await Task.Delay(300, token);
+
+                    WorkInProgress = Visibility.Visible;
+                    DatabaseObjects.Clear();
+                    Conditions.Clear();
+
+                    Dictionary<string, List<string>> SQlCommands = new()
                 {
                         {"u",  new() { Constant.UserTable}},
                         {"p",  new() { Constant.Procedure }},
@@ -303,56 +376,71 @@ namespace SkyLineSQL
                         {"a",  new() { Constant.UserTable, Constant.Procedure, Constant.Trigger, Constant.FunctionIF, Constant.FunctionFN, Constant.View}},
                 };
 
-                List<string> filters = new();
-                bool deepSearch = false;
+                    List<string> filters = new();
+                    bool deepSearch = false;
 
-                foreach (var cmdStr in SearchToken.Command)
-                {
-                    var cmd = cmdStr.ToString().ToLower();
-                    if (SQlCommands.ContainsKey(cmd))
+                    foreach (var cmdStr in SearchToken.Command)
                     {
-                        filters.AddRange(SQlCommands[cmd]);
+                        var cmd = cmdStr.ToString().ToLower();
+                        if (SQlCommands.ContainsKey(cmd))
+                        {
+                            filters.AddRange(SQlCommands[cmd]);
+                        }
+                        else if (cmd.Equals(Constant.DeepSearch))
+                        {
+                            deepSearch = true;
+                        }
                     }
-                    else if (cmd.Equals(Constant.DeepSearch))
+
+                    if (deepSearch && filters.Count == 0)
                     {
-                        deepSearch = true;
+                        filters.AddRange(SQlCommands[Constant.AllSearch.ToLower()]);
                     }
-                }
 
-                if (deepSearch && filters.Count == 0)
-                {
-                    filters.AddRange(SQlCommands[Constant.AllSearch.ToLower()]);
-                }
-
-                if (deepSearch)
-                {
-                    foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text, token))
+                    if (deepSearch)
                     {
-                        DatabaseObjects.Add(item);
+                        foreach (var item in await DM.SearchDeepObject(filters, SearchToken.Text, token))
+                        {
+                            DatabaseObjects.Add(item);
+                        }
                     }
-                }
-                else
-                {
-                    foreach (var item in await DM.SearchObject(filters, SearchToken.Text, token))
+                    else
                     {
-                        DatabaseObjects.Add(item);
+                        foreach (var item in await DM.SearchObject(filters, SearchToken.Text, token))
+                        {
+                            if (usage.ContainsKey(item.Name))
+                            {
+                                int count = usage[item.Name];
+                                item.UsageCount = count;
+                            }
+
+                            if (!item.Star)
+                            {
+                                DatabaseObjects.Add(item);
+                            }
+                            else
+                            {
+                                var index = DatabaseObjects
+                                           .TakeWhile(x => x.Star && x.UsageCount >= item.UsageCount)
+                                           .Count();
+                                DatabaseObjects.Insert(index, item);
+                            }
+                        }
+                    }
+
+                    if (DatabaseObjects.Count > 0)
+                    {
+                        SelectedIndex = 0;
+
+                        GetPreviewText(token);
+                        //GetPreviewGrid(token);
+                        GenerateColumns(token);
                     }
                 }
-
-                if (DatabaseObjects.Count > 0)
+                catch (Exception)
                 {
-                    SelectedIndex = 0;
-
-                    GetPreviewText(token);
-                    //GetPreviewGrid(token);
-                    GenerateColumns(token);
+                    // ignored
                 }
-
-
-            }
-            catch (Exception)
-            {
-                // ignored
             }
             WorkInProgress = Visibility.Hidden;
         }
@@ -408,7 +496,14 @@ namespace SkyLineSQL
 
         private bool CanExecuteSelectionCommand(object param)
         {
-            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof");
+            return (SelectedIndex > -1 && SelectedIndex < DatabaseObjects.Count) || SearchToken.Command.Equals("prof") || SearchToken.Command.Equals("rpt");
+        }
+
+        public class MetaData
+        {
+            public string SPName;
+            public string TableName;
+            public string ColumnName;
         }
         private async Task ExecuteSelectionCommand(object param)
         {
@@ -428,14 +523,73 @@ namespace SkyLineSQL
                 ProfilerWindow profilerWindow = new($"{DM.CurrentConnection} - SQL Profiler", profilerVM);
                 profilerWindow.Show();
             }
+            else if (SearchToken.Text.Equals("rpt"))
+            {
+                ColumnsOfObject.Clear();
+                ColumnsOfObject.Add(new(0, "Generating Report..."));
+
+
+                List<MetaData> list_res = new List<MetaData>();
+                var result = await DM.SearchObject(new List<string>() { Constant.FunctionFN, Constant.FunctionIF }, "", token);
+                int count = 1;
+                foreach (var res in result)
+                {
+                    ColumnsOfObject.Add(new(1, $"{count++} / {result.Count()}"));
+                    var str = await DM.GenerateReport(res, token);
+                    list_res.AddRange(str);
+
+                    ColumnsOfObject.Remove(ColumnsOfObject[1]);
+                }
+
+                await File.AppendAllLinesAsync("./output.txt", list_res.Select(x => $"{x.SPName},{x.TableName},{x.ColumnName}"));
+
+                foreach (var item in list_res.GroupBy(x => x.SPName))
+                {
+                    var str = $"{item.Key} -> {item.Select(x => x.TableName).Distinct().Count()} Tables";
+                    await File.AppendAllLinesAsync("./output_table_summery.txt", new[] { str });
+                }
+
+                foreach (var item in list_res.GroupBy(x => x.SPName))
+                {
+                    var str = $"{item.Key} -> {item.Select(x => $"{x.TableName}.{x.ColumnName}").Distinct().Count()} Columns";
+                    await File.AppendAllLinesAsync("./output_column_summery.txt", new[] { str });
+                }
+
+                foreach (var item in list_res.GroupBy(x => x.SPName))
+                {
+                    var str = $"{item.Key} -> {item.Where(x => x.TableName.StartsWith("ExternalDB")).Select(x => x.TableName).Distinct().Count()} Tables";
+                    await File.AppendAllLinesAsync("./output_external_table_summery.txt", new[] { str });
+                }
+                foreach (var item in list_res.GroupBy(x => x.SPName))
+                {
+                    var str = $"{item.Key} -> {item.Where(x => x.TableName.StartsWith("ExternalDB")).Select(x => $"{x.TableName}.{x.ColumnName}").Distinct().Count()} Columns";
+                    await File.AppendAllLinesAsync("./output_external_column_summery.txt", new[] { str });
+                }
+
+                ColumnsOfObject.Clear();
+                ColumnsOfObject.Add(new(0, "Completed"));
+            }
             else
             {
                 var SelectedItem = DatabaseObjects[SelectedIndex];
                 if (SelectedItem is not null)
                 {
-                    var text = await DM.GetObject(SelectedItem, Conditions, token);
-                    Clipboard.SetText(text);
-                    Conditions.Clear();
+                    usage.AddUpdate(SelectedItem.Name);
+                    if (SelectedItem.Type.Equals(Constant.Column))
+                    {
+                        var text = SelectedItem.Name;
+                        Clipboard.SetText(text);
+                        Conditions.Clear();
+                    }
+                    else
+                    {
+                        var text = await DM.GetObject(SelectedItem, Conditions, token);
+                        Clipboard.SetText(text);
+                        Conditions.Clear();
+                    }
+
+                    InTab = false;
+                    tab_cols.Clear();
                 }
             }
         }
@@ -503,6 +657,12 @@ namespace SkyLineSQL
                 preview_mode = "Normal";
             }
 
+            cst?.Cancel();              // cancel previous search
+            cst = new CancellationTokenSource();
+            var token = cst.Token;
+
+            GetPreviewText(token);
+
             ColumnsOfObject.Add(new(0, preview_mode));
             await Task.Delay(1000);
             ColumnsOfObject.Clear();
@@ -516,6 +676,8 @@ namespace SkyLineSQL
             if (window is not null)
             {
                 window.Hide();
+
+                InTab = false;
             }
         }
         private void ExecuteExitCommand(object param) => System.Windows.Application.Current.Shutdown();
