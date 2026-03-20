@@ -205,7 +205,9 @@ namespace SkyLineSQL
 
             SearchToken = new();
 
-            ChangeDatabaseCommand = new RelayCommand(ExecuteChangeDatabaseCommand);
+            //ChangeDatabaseCommand = new RelayCommand(ExecuteChangeDatabaseCommand);
+            ChangeDatabaseCommand = new RelayCommandAsync(ExecuteChangeDatabaseCommand);
+
             SearchDatabaseCommand = new RelayCommandAsync(ExecuteSearchDatabaseCommand, CanExecuteSearchDatabaseCommand);
             ReloadDatabaseCommand = new RelayCommand(ExecuteReloadDatabaseCommand);
 
@@ -304,7 +306,7 @@ namespace SkyLineSQL
 
 
 
-        private void ExecuteChangeDatabaseCommand(object param)
+        private async Task ExecuteChangeDatabaseCommand(object param)
         {
             string key = param as string;
             if (key.Equals("P"))
@@ -315,7 +317,11 @@ namespace SkyLineSQL
             DatabaseObjects.Clear();
             Conditions.Clear();
             ColumnsOfObject.Clear();
+
             ThemeColor = DM.CurrentConnection.ThemeColor;
+
+            if (!string.IsNullOrWhiteSpace(SearchToken.Text))
+                await ExecuteSearchDatabaseCommand(null);
         }
 
 
